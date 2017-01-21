@@ -16,6 +16,7 @@ class Result extends React.Component {
       <li>
         <Link/>
         <a href={this.props.href}>{this.props.title}</a>
+        {this.props.public && <p className="public">Public</p>}
       </li>
     );
   }

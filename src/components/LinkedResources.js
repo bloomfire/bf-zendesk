@@ -1,6 +1,7 @@
 import React from 'react';
 
 // components
+import Result from './Result';
 import { Caret, Link } from './functional';
 
 
@@ -11,10 +12,26 @@ class LinkedResources extends React.Component {
     super(props);
     this.state = {
       resources: [
-        'How do I configure my wifi?',
-        'What is the wifi password?',
-        'Why is the red light on my router...',
-        'How do I turn off my wifi device?'
+        {
+          title: 'How do I configure my wifi?',
+          href: 'http://www.google.com/',
+          public: false
+        },
+        {
+          title: 'What is the wifi password?',
+          href: 'http://www.google.com/',
+          public: false
+        },
+        {
+          title: 'Why is the red light on my router blinking constantly?',
+          href: 'http://www.google.com/',
+          public: true
+        },
+        {
+          title: 'How do I turn off my wifi device?',
+          href: 'http://www.google.com/',
+          public: false
+        }
       ]
     };
   }
@@ -28,7 +45,7 @@ class LinkedResources extends React.Component {
           <p className="message">No linked resources.</p>
           <p className="instructions">Click <Link/> to add.</p>
           <ul>
-            {this.state.resources.map((resource, i) => <li key={i}>{resource}</li>)}
+            {this.state.resources.map((result, i) => <Result key={i} title={result.title} href={result.href} public={result.public}/>)}
           </ul>
         </div>
       </section>

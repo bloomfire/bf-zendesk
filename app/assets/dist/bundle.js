@@ -9732,16 +9732,20 @@ var Results = function (_React$Component) {
       message: 'You might find these resources helpful:',
       results: [{
         title: 'What time is it in London?',
-        href: 'http://www.google.com/'
+        href: 'http://www.google.com/',
+        public: false
       }, {
         title: 'Why is the sky blue?',
-        href: 'http://www.google.com/'
+        href: 'http://www.google.com/',
+        public: true
       }, {
         title: 'What is the wifi password?',
-        href: 'http://www.google.com/'
+        href: 'http://www.google.com/',
+        public: false
       }, {
         title: 'What do lions do in the woods with...',
-        href: 'http://www.google.com/'
+        href: 'http://www.google.com/',
+        public: false
       }]
     };
     return _this;
@@ -9762,7 +9766,7 @@ var Results = function (_React$Component) {
           'ul',
           null,
           this.state.results.map(function (result, i) {
-            return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href });
+            return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href, 'public': result.public });
           })
         )
       );
@@ -22509,6 +22513,10 @@ var _react = __webpack_require__(13);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _Result = __webpack_require__(190);
+
+var _Result2 = _interopRequireDefault(_Result);
+
 var _functional = __webpack_require__(191);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
@@ -22531,7 +22539,23 @@ var LinkedResources = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (LinkedResources.__proto__ || Object.getPrototypeOf(LinkedResources)).call(this, props));
 
     _this.state = {
-      resources: ['How do I configure my wifi?', 'What is the wifi password?', 'Why is the red light on my router...', 'How do I turn off my wifi device?']
+      resources: [{
+        title: 'How do I configure my wifi?',
+        href: 'http://www.google.com/',
+        public: false
+      }, {
+        title: 'What is the wifi password?',
+        href: 'http://www.google.com/',
+        public: false
+      }, {
+        title: 'Why is the red light on my router blinking constantly?',
+        href: 'http://www.google.com/',
+        public: true
+      }, {
+        title: 'How do I turn off my wifi device?',
+        href: 'http://www.google.com/',
+        public: false
+      }]
     };
     return _this;
   }
@@ -22566,12 +22590,8 @@ var LinkedResources = function (_React$Component) {
           _react2.default.createElement(
             'ul',
             null,
-            this.state.resources.map(function (resource, i) {
-              return _react2.default.createElement(
-                'li',
-                { key: i },
-                resource
-              );
+            this.state.resources.map(function (result, i) {
+              return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href, 'public': result.public });
             })
           )
         )
@@ -22634,6 +22654,11 @@ var Result = function (_React$Component) {
           'a',
           { href: this.props.href },
           this.props.title
+        ),
+        this.props.public && _react2.default.createElement(
+          'p',
+          { className: 'public' },
+          'Public'
         )
       );
     }
