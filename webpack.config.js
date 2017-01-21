@@ -3,12 +3,18 @@
 const path              = require('path'),
       webpack           = require('webpack');
 
+const PATHS = {
+  src: path.join(__dirname, '/src'),
+  styles: path.join(__dirname,'/src/less'),
+  dist: path.join(__dirname, '/app/assets/dist')
+};
+
 
 
 module.exports = {
   entry: './src/index.js',
   output: {
-    path: path.join(__dirname, '/app', '/assets'),
+    path: PATHS.dist,
     filename: 'bundle.js',
     publicPath: '/src/assets/'
   },
@@ -17,8 +23,7 @@ module.exports = {
       {
         test: /\.jsx?$/,
         loader: 'babel-loader',
-        include: path.join(__dirname, '/src'),
-        exclude: /node_modules/,
+        include: PATHS.src,
         options: {
           presets: [
             'es2015',
@@ -28,8 +33,6 @@ module.exports = {
       },
       {
         test: /\.less$/,
-        include: path.join(__dirname, '/src', '/less'),
-        exclude: /node_modules/,
         loaders: [
           'style-loader',
           {
@@ -39,10 +42,17 @@ module.exports = {
             }
           },
           'less-loader'
-        ]
+        ],
+        include: PATHS.styles
+      },
+      {
+        test: /\.(eot|svg|ttf|woff|woff2)$/,
+        loader: 'file-loader',
+        include: PATHS.src
       }
     ]
-  }
+  },
+  devtool: 'source-map'
 };
 
 
