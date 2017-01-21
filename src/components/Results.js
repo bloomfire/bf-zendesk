@@ -1,5 +1,8 @@
 import React from 'react';
 
+// components
+import Result from './Result';
+
 
 
 class Results extends React.Component {
@@ -7,24 +10,36 @@ class Results extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      message: 'You might find these results helpful:',
+      message: 'You might find these resources helpful:',
       results: [
-        'What time is it in London?',
-        'Why is the sky blue?',
-        'What is the wifi password?',
-        'What do lions do in the woods with...'
+        {
+          title: 'What time is it in London?',
+          href: 'http://www.google.com/'
+        },
+        {
+          title: 'Why is the sky blue?',
+          href: 'http://www.google.com/'
+        },
+        {
+          title: 'What is the wifi password?',
+          href: 'http://www.google.com/'
+        },
+        {
+          title: 'What do lions do in the woods with...',
+          href: 'http://www.google.com/'
+        }
       ]
     };
   }
 
   render() {
     return (
-      <section className="results">
+      <div className="results">
         <p className="message">{this.state.message}</p>
         <ul>
-          {this.state.results.map((result, i) => <li key={i}>{result}</li>)}
+          {this.state.results.map((result, i) => <Result key={i} title={result.title} href={result.href}/>)}
         </ul>
-      </section>
+      </div>
     );
   }
 

@@ -6,10 +6,10 @@ class Tabs extends React.Component {
 
   render() {
     return (
-      <section className="tabs">
+      <div className="tabs">
         <div className="add-post">Add a Post</div>
         <div className="add-question">Add a Question</div>
-      </section>
+      </div>
     );
   }
 

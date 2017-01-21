@@ -2,10 +2,8 @@ import React from 'react';
 
 // components
 import Search from './Search';
-import Resources from './Resources';
-import Tabs from './Tabs';
-import Post from './Post';
-import Question from './Question';
+import LinkedResources from './LinkedResources';
+import AddContent from './AddContent';
 
 
 
@@ -20,7 +18,9 @@ class App extends React.Component {
 
   getTicketDescription() {
     this.client.get('ticket.description').then((data) => {
-      this.setState({ description: data['ticket.description'] });
+      this.setState({
+        description: data['ticket.description']
+      });
     });
   }
 
@@ -33,10 +33,8 @@ class App extends React.Component {
     return (
       <main>
         <Search query={this.state.description}/>
-        <Resources/>
-        <Tabs/>
-        <Post/>
-        <Question/>
+        <LinkedResources/>
+        <AddContent/>
       </main>
     );
   }
