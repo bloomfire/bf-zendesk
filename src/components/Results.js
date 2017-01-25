@@ -40,7 +40,7 @@ class Results extends React.Component {
     return (
       <div className="results">
         <p className="message">{this.state.message}</p>
-        <ul>
+        <ul className="link-list">
           {this.state.results.map((result, i) => <Result key={i} title={result.title} href={result.href} public={result.public}/>)}
         </ul>
       </div>

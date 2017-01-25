@@ -10,9 +10,11 @@ class Search extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      query: '',
+      value: '',
       results: []
     };
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
   }
 
   componentWillMount() {
@@ -22,11 +24,22 @@ class Search extends React.Component {
     console.log(this.props.query);
   }
 
+  handleChange(event) {
+    this.setState({
+      value: event.target.value
+    });
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    console.log(this.state.value);
+  }
+
   render() {
     return (
       <section className="search">
-        <form>
-          <input type="text" placeholder="Search your community"/>
+        <form onSubmit={this.handleSubmit}>
+          <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Search your community"/>
           <input type="submit" value="Search"/>
         </form>
         <Results/>

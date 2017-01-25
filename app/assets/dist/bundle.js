@@ -9764,7 +9764,7 @@ var Results = function (_React$Component) {
         ),
         _react2.default.createElement(
           'ul',
-          null,
+          { className: 'link-list' },
           this.state.results.map(function (result, i) {
             return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href, 'public': result.public });
           })
@@ -9819,9 +9819,11 @@ var Search = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Search.__proto__ || Object.getPrototypeOf(Search)).call(this, props));
 
     _this.state = {
-      query: '',
+      value: '',
       results: []
     };
+    _this.handleChange = _this.handleChange.bind(_this);
+    _this.handleSubmit = _this.handleSubmit.bind(_this);
     return _this;
   }
 
@@ -9834,6 +9836,19 @@ var Search = function (_React$Component) {
       console.log(this.props.query);
     }
   }, {
+    key: 'handleChange',
+    value: function handleChange(event) {
+      this.setState({
+        value: event.target.value
+      });
+    }
+  }, {
+    key: 'handleSubmit',
+    value: function handleSubmit(event) {
+      event.preventDefault();
+      console.log(this.state.value);
+    }
+  }, {
     key: 'render',
     value: function render() {
       return _react2.default.createElement(
@@ -9841,8 +9856,8 @@ var Search = function (_React$Component) {
         { className: 'search' },
         _react2.default.createElement(
           'form',
-          null,
-          _react2.default.createElement('input', { type: 'text', placeholder: 'Search your community' }),
+          { onSubmit: this.handleSubmit },
+          _react2.default.createElement('input', { type: 'text', value: this.state.value, onChange: this.handleChange, placeholder: 'Search your community' }),
           _react2.default.createElement('input', { type: 'submit', value: 'Search' })
         ),
         _react2.default.createElement(_Results2.default, null)
@@ -9923,7 +9938,7 @@ exports = module.exports = __webpack_require__(90)();
 
 
 // module
-exports.push([module.i, "body {\n  font-size: 12.5px;\n  color: #404040;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n}\n", ""]);
+exports.push([module.i, "body {\n  font-size: 12.5px;\n  color: #404040;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 9px;\n  position: absolute;\n  top: 0;\n  right: 0;\n  cursor: pointer;\n}\n.link-list {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n}\n.link-list li {\n  line-height: 20px;\n}\n.link-list li a:hover,\n.link-list li a:active {\n  text-decoration: underline;\n}\n.link-list .icon-link {\n  width: 11.5px;\n  height: 11.5px;\n}\n.icon-link {\n  vertical-align: middle;\n}\nsection.search ul {\n  background-color: rgba(155, 155, 155, 0.1);\n}\nsection.linked-resources .instructions .icon-link {\n  width: 8.5px;\n  height: 8.5px;\n}\n", ""]);
 
 // exports
 
@@ -22513,11 +22528,21 @@ var _react = __webpack_require__(13);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _classnames = __webpack_require__(201);
+
+var _classnames2 = _interopRequireDefault(_classnames);
+
 var _Result = __webpack_require__(190);
 
 var _Result2 = _interopRequireDefault(_Result);
 
-var _functional = __webpack_require__(191);
+var _CaretIcon = __webpack_require__(194);
+
+var _CaretIcon2 = _interopRequireDefault(_CaretIcon);
+
+var _LinkIcon = __webpack_require__(193);
+
+var _LinkIcon2 = _interopRequireDefault(_LinkIcon);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -22539,6 +22564,7 @@ var LinkedResources = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (LinkedResources.__proto__ || Object.getPrototypeOf(LinkedResources)).call(this, props));
 
     _this.state = {
+      isCollapsed: false,
       resources: [{
         title: 'How do I configure my wifi?',
         href: 'http://www.google.com/',
@@ -22557,42 +22583,57 @@ var LinkedResources = function (_React$Component) {
         public: false
       }]
     };
+    _this.toggleCollapsed = _this.toggleCollapsed.bind(_this);
     return _this;
   }
 
   _createClass(LinkedResources, [{
+    key: 'toggleCollapsed',
+    value: function toggleCollapsed(event) {
+      this.setState(function (prevState) {
+        return {
+          isCollapsed: !prevState.isCollapsed
+        };
+      });
+    }
+  }, {
     key: 'render',
     value: function render() {
+      var classNameSection = (0, _classnames2.default)('linked-resources', { collapsed: this.state.isCollapsed });
       return _react2.default.createElement(
         'section',
-        { className: 'linked-resources' },
+        { className: classNameSection },
         _react2.default.createElement(
           'h2',
           null,
           'Linked Resources'
         ),
-        _react2.default.createElement(_functional.Caret, null),
+        _react2.default.createElement(_CaretIcon2.default, { handleClick: this.toggleCollapsed }),
         _react2.default.createElement(
           'div',
-          { className: 'links-box' },
+          { className: 'section-content' },
           _react2.default.createElement(
-            'p',
-            { className: 'message' },
-            'No linked resources.'
-          ),
-          _react2.default.createElement(
-            'p',
-            { className: 'instructions' },
-            'Click ',
-            _react2.default.createElement(_functional.Link, null),
-            ' to add.'
-          ),
-          _react2.default.createElement(
-            'ul',
-            null,
-            this.state.resources.map(function (result, i) {
-              return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href, 'public': result.public });
-            })
+            'div',
+            { className: 'links-box' },
+            _react2.default.createElement(
+              'p',
+              { className: 'message' },
+              'No linked resources.'
+            ),
+            _react2.default.createElement(
+              'p',
+              { className: 'instructions' },
+              'Click ',
+              _react2.default.createElement(_LinkIcon2.default, null),
+              ' to add.'
+            ),
+            _react2.default.createElement(
+              'ul',
+              { className: 'link-list' },
+              this.state.resources.map(function (result, i) {
+                return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href, 'public': result.public });
+              })
+            )
           )
         )
       );
@@ -22621,7 +22662,9 @@ var _react = __webpack_require__(13);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _functional = __webpack_require__(191);
+var _LinkIcon = __webpack_require__(193);
+
+var _LinkIcon2 = _interopRequireDefault(_LinkIcon);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -22649,7 +22692,7 @@ var Result = function (_React$Component) {
       return _react2.default.createElement(
         'li',
         null,
-        _react2.default.createElement(_functional.Link, null),
+        _react2.default.createElement(_LinkIcon2.default, null),
         _react2.default.createElement(
           'a',
           { href: this.props.href },
@@ -22670,43 +22713,7 @@ var Result = function (_React$Component) {
 exports.default = Result;
 
 /***/ }),
-/* 191 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.Link = exports.Caret = undefined;
-
-var _react = __webpack_require__(13);
-
-var _react2 = _interopRequireDefault(_react);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-var Caret = function Caret() {
-  return _react2.default.createElement(
-    "svg",
-    { viewBox: "0 0 101 59" },
-    _react2.default.createElement("path", { d: "M100.602 50.352c0 .868-.334 1.636-1.002 2.304l-5.01 5.01c-.668.668-1.437 1.002-2.305 1.002-.868 0-1.637-.334-2.305-1.002l-39.378-39.38-39.38 39.38c-.667.668-1.435 1.002-2.304 1.002-.868 0-1.636-.334-2.304-1.002l-5.01-5.01C.936 51.988.602 51.22.602 50.352c0-.87.334-1.637 1.002-2.305L48.297 1.354C48.965.686 49.733.352 50.602.352c.868 0 1.636.334 2.304 1.002L99.6 48.047c.668.668 1.002 1.436 1.002 2.305z" })
-  );
-};
-
-var Link = function Link() {
-  return _react2.default.createElement(
-    "svg",
-    { viewBox: "0 0 101 101" },
-    _react2.default.createElement("path", { d: "M88.36 73.654c0-1.634-.572-3.022-1.715-4.166L73.9 56.743c-1.144-1.144-2.533-1.716-4.167-1.716-1.716 0-3.186.654-4.412 1.96.124.123.512.5 1.165 1.134.654.634 1.093 1.074 1.318 1.32.224.244.53.632.92 1.163.387.53.652 1.052.795 1.562.143.51.215 1.073.215 1.685 0 1.634-.572 3.023-1.716 4.167-1.144 1.144-2.533 1.716-4.167 1.716-.612 0-1.174-.072-1.685-.215-.51-.143-1.03-.408-1.562-.796-.53-.388-.92-.695-1.164-.92-.246-.224-.686-.663-1.32-1.317-.632-.653-1.01-1.04-1.132-1.164-1.348 1.267-2.022 2.758-2.022 4.474 0 1.634.572 3.023 1.715 4.167l12.624 12.685c1.103 1.103 2.492 1.654 4.167 1.654 1.635 0 3.023-.532 4.167-1.594l9.008-8.946c1.143-1.144 1.715-2.512 1.715-4.106zM45.284 30.456c0-1.634-.572-3.023-1.715-4.167L30.945 13.604c-1.144-1.143-2.533-1.715-4.167-1.715-1.594 0-2.983.55-4.167 1.654l-9.008 8.946c-1.143 1.144-1.715 2.512-1.715 4.106 0 1.634.572 3.022 1.715 4.166L26.35 43.507c1.103 1.103 2.492 1.655 4.167 1.655 1.716 0 3.186-.633 4.412-1.9-.124-.122-.512-.5-1.165-1.133-.654-.634-1.093-1.074-1.318-1.32-.224-.244-.53-.632-.92-1.163-.387-.53-.652-1.052-.795-1.562-.143-.51-.215-1.073-.215-1.685 0-1.634.572-3.023 1.716-4.167 1.144-1.144 2.533-1.716 4.167-1.716.612 0 1.174.072 1.685.215.51.143 1.03.408 1.562.796.53.388.92.695 1.164.92.246.224.686.663 1.32 1.317.632.653 1.01 1.04 1.132 1.164 1.348-1.267 2.022-2.758 2.022-4.474zm54.84 43.198c0 4.902-1.735 9.05-5.207 12.44l-9.008 8.945c-3.39 3.39-7.537 5.085-12.44 5.085-4.942 0-9.11-1.736-12.5-5.208L48.35 82.233c-3.39-3.39-5.086-7.537-5.086-12.44 0-5.023 1.798-9.292 5.392-12.805l-5.392-5.392c-3.513 3.594-7.76 5.392-12.745 5.392-4.902 0-9.068-1.716-12.5-5.147L5.272 39.097c-3.43-3.432-5.147-7.598-5.147-12.5s1.736-9.05 5.208-12.44l9.008-8.945C17.73 1.82 21.878.126 26.78.126c4.942 0 9.11 1.736 12.5 5.208L51.9 18.017c3.39 3.39 5.086 7.537 5.086 12.44 0 5.023-1.798 9.292-5.392 12.805l5.392 5.392c3.513-3.594 7.76-5.392 12.745-5.392 4.902 0 9.068 1.716 12.5 5.147l12.745 12.744c3.43 3.432 5.147 7.598 5.147 12.5z" })
-  );
-};
-
-exports.Caret = Caret;
-exports.Link = Link;
-
-/***/ }),
+/* 191 */,
 /* 192 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -22723,6 +22730,10 @@ var _react = __webpack_require__(13);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _classnames = __webpack_require__(201);
+
+var _classnames2 = _interopRequireDefault(_classnames);
+
 var _Tabs = __webpack_require__(88);
 
 var _Tabs2 = _interopRequireDefault(_Tabs);
@@ -22735,7 +22746,9 @@ var _Question = __webpack_require__(84);
 
 var _Question2 = _interopRequireDefault(_Question);
 
-var _functional = __webpack_require__(191);
+var _CaretIcon = __webpack_require__(194);
+
+var _CaretIcon2 = _interopRequireDefault(_CaretIcon);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -22754,24 +22767,44 @@ var AddContent = function (_React$Component) {
   function AddContent(props) {
     _classCallCheck(this, AddContent);
 
-    return _possibleConstructorReturn(this, (AddContent.__proto__ || Object.getPrototypeOf(AddContent)).call(this, props));
+    var _this = _possibleConstructorReturn(this, (AddContent.__proto__ || Object.getPrototypeOf(AddContent)).call(this, props));
+
+    _this.state = {
+      isCollapsed: false
+    };
+    _this.toggleCollapsed = _this.toggleCollapsed.bind(_this);
+    return _this;
   }
 
   _createClass(AddContent, [{
+    key: 'toggleCollapsed',
+    value: function toggleCollapsed(event) {
+      this.setState(function (prevState) {
+        return {
+          isCollapsed: !prevState.isCollapsed
+        };
+      });
+    }
+  }, {
     key: 'render',
     value: function render() {
+      var classNameSection = (0, _classnames2.default)('add-content', { collapsed: this.state.isCollapsed });
       return _react2.default.createElement(
         'section',
-        { className: 'add-content' },
+        { className: classNameSection },
         _react2.default.createElement(
           'h2',
           null,
           'Add content to Bloomfire'
         ),
-        _react2.default.createElement(_functional.Caret, null),
-        _react2.default.createElement(_Tabs2.default, null),
-        _react2.default.createElement(_Post2.default, null),
-        _react2.default.createElement(_Question2.default, null)
+        _react2.default.createElement(_CaretIcon2.default, { handleClick: this.toggleCollapsed }),
+        _react2.default.createElement(
+          'div',
+          { className: 'section-content' },
+          _react2.default.createElement(_Tabs2.default, null),
+          _react2.default.createElement(_Post2.default, null),
+          _react2.default.createElement(_Question2.default, null)
+        )
       );
     }
   }]);
@@ -22780,6 +22813,121 @@ var AddContent = function (_React$Component) {
 }(_react2.default.Component);
 
 exports.default = AddContent;
+
+/***/ }),
+/* 193 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = __webpack_require__(13);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var LinkIcon = function LinkIcon(props) {
+  return _react2.default.createElement(
+    "svg",
+    { className: "icon icon-link", viewBox: "0 0 101 101" },
+    _react2.default.createElement("path", { d: "M88.36 73.654c0-1.634-.572-3.022-1.715-4.166L73.9 56.743c-1.144-1.144-2.533-1.716-4.167-1.716-1.716 0-3.186.654-4.412 1.96.124.123.512.5 1.165 1.134.654.634 1.093 1.074 1.318 1.32.224.244.53.632.92 1.163.387.53.652 1.052.795 1.562.143.51.215 1.073.215 1.685 0 1.634-.572 3.023-1.716 4.167-1.144 1.144-2.533 1.716-4.167 1.716-.612 0-1.174-.072-1.685-.215-.51-.143-1.03-.408-1.562-.796-.53-.388-.92-.695-1.164-.92-.246-.224-.686-.663-1.32-1.317-.632-.653-1.01-1.04-1.132-1.164-1.348 1.267-2.022 2.758-2.022 4.474 0 1.634.572 3.023 1.715 4.167l12.624 12.685c1.103 1.103 2.492 1.654 4.167 1.654 1.635 0 3.023-.532 4.167-1.594l9.008-8.946c1.143-1.144 1.715-2.512 1.715-4.106zM45.284 30.456c0-1.634-.572-3.023-1.715-4.167L30.945 13.604c-1.144-1.143-2.533-1.715-4.167-1.715-1.594 0-2.983.55-4.167 1.654l-9.008 8.946c-1.143 1.144-1.715 2.512-1.715 4.106 0 1.634.572 3.022 1.715 4.166L26.35 43.507c1.103 1.103 2.492 1.655 4.167 1.655 1.716 0 3.186-.633 4.412-1.9-.124-.122-.512-.5-1.165-1.133-.654-.634-1.093-1.074-1.318-1.32-.224-.244-.53-.632-.92-1.163-.387-.53-.652-1.052-.795-1.562-.143-.51-.215-1.073-.215-1.685 0-1.634.572-3.023 1.716-4.167 1.144-1.144 2.533-1.716 4.167-1.716.612 0 1.174.072 1.685.215.51.143 1.03.408 1.562.796.53.388.92.695 1.164.92.246.224.686.663 1.32 1.317.632.653 1.01 1.04 1.132 1.164 1.348-1.267 2.022-2.758 2.022-4.474zm54.84 43.198c0 4.902-1.735 9.05-5.207 12.44l-9.008 8.945c-3.39 3.39-7.537 5.085-12.44 5.085-4.942 0-9.11-1.736-12.5-5.208L48.35 82.233c-3.39-3.39-5.086-7.537-5.086-12.44 0-5.023 1.798-9.292 5.392-12.805l-5.392-5.392c-3.513 3.594-7.76 5.392-12.745 5.392-4.902 0-9.068-1.716-12.5-5.147L5.272 39.097c-3.43-3.432-5.147-7.598-5.147-12.5s1.736-9.05 5.208-12.44l9.008-8.945C17.73 1.82 21.878.126 26.78.126c4.942 0 9.11 1.736 12.5 5.208L51.9 18.017c3.39 3.39 5.086 7.537 5.086 12.44 0 5.023-1.798 9.292-5.392 12.805l5.392 5.392c3.513-3.594 7.76-5.392 12.745-5.392 4.902 0 9.068 1.716 12.5 5.147l12.745 12.744c3.43 3.432 5.147 7.598 5.147 12.5z" })
+  );
+};
+
+exports.default = LinkIcon;
+
+/***/ }),
+/* 194 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _react = __webpack_require__(13);
+
+var _react2 = _interopRequireDefault(_react);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var CaretIcon = function CaretIcon(props) {
+  return _react2.default.createElement(
+    "svg",
+    { className: "icon icon-caret", viewBox: "0 0 101 59", onClick: props.handleClick },
+    _react2.default.createElement("path", { d: "M100.602 50.352c0 .868-.334 1.636-1.002 2.304l-5.01 5.01c-.668.668-1.437 1.002-2.305 1.002-.868 0-1.637-.334-2.305-1.002l-39.378-39.38-39.38 39.38c-.667.668-1.435 1.002-2.304 1.002-.868 0-1.636-.334-2.304-1.002l-5.01-5.01C.936 51.988.602 51.22.602 50.352c0-.87.334-1.637 1.002-2.305L48.297 1.354C48.965.686 49.733.352 50.602.352c.868 0 1.636.334 2.304 1.002L99.6 48.047c.668.668 1.002 1.436 1.002 2.305z" })
+  );
+};
+
+exports.default = CaretIcon;
+
+/***/ }),
+/* 195 */,
+/* 196 */,
+/* 197 */,
+/* 198 */,
+/* 199 */,
+/* 200 */,
+/* 201 */
+/***/ (function(module, exports, __webpack_require__) {
+
+var __WEBPACK_AMD_DEFINE_ARRAY__, __WEBPACK_AMD_DEFINE_RESULT__;/*!
+  Copyright (c) 2016 Jed Watson.
+  Licensed under the MIT License (MIT), see
+  http://jedwatson.github.io/classnames
+*/
+/* global define */
+
+(function () {
+	'use strict';
+
+	var hasOwn = {}.hasOwnProperty;
+
+	function classNames () {
+		var classes = [];
+
+		for (var i = 0; i < arguments.length; i++) {
+			var arg = arguments[i];
+			if (!arg) continue;
+
+			var argType = typeof arg;
+
+			if (argType === 'string' || argType === 'number') {
+				classes.push(arg);
+			} else if (Array.isArray(arg)) {
+				classes.push(classNames.apply(null, arg));
+			} else if (argType === 'object') {
+				for (var key in arg) {
+					if (hasOwn.call(arg, key) && arg[key]) {
+						classes.push(key);
+					}
+				}
+			}
+		}
+
+		return classes.join(' ');
+	}
+
+	if (typeof module !== 'undefined' && module.exports) {
+		module.exports = classNames;
+	} else if (true) {
+		// register as 'classnames', consistent with npm package name
+		!(__WEBPACK_AMD_DEFINE_ARRAY__ = [], __WEBPACK_AMD_DEFINE_RESULT__ = function () {
+			return classNames;
+		}.apply(exports, __WEBPACK_AMD_DEFINE_ARRAY__),
+				__WEBPACK_AMD_DEFINE_RESULT__ !== undefined && (module.exports = __WEBPACK_AMD_DEFINE_RESULT__));
+	} else {
+		window.classNames = classNames;
+	}
+}());
+
 
 /***/ })
 /******/ ]);

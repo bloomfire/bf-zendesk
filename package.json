@@ -15,6 +15,7 @@
   "author": "Troy Warr <troy3000@gmail.com> (http://troywarr.info/)",
   "license": "UNLICENSED",
   "dependencies": {
+    "classnames": "^2.2.5",
     "react": "^15.4.2",
     "react-dom": "^15.4.2"
   },
