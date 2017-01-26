@@ -1,7 +1,85 @@
 // search section
 
 section.search {
-  ul {
+  form {
+    .clearfix;
+    margin-bottom: 12px;
+  }
+
+  input[type=text] {
+    .border-radius(2px);
+    border: 1px solid #b8b8b8;
+    font-size: 11px;
+    width: 232px;
+    line-height: 24px;
+    padding: 0 8px;
+    color: #666;
+    float: left;
+
+    &::-webkit-input-placeholder {
+      font-weight: 300;
+    }
+
+    &:-moz-placeholder {
+      font-weight: 300;
+    }
+
+    &::-moz-placeholder {
+      font-weight: 300;
+    }
+
+    &:-ms-input-placeholder {
+      font-weight: 300;
+    }
+  }
+
+  input[type=submit] {
+    .border-radius(4px);
+    .transition(background-color 0.2s linear);
+    background-color: #e85b43;
+    color: #fff;
+    font-weight: 600;
+    font-size: 12.5px;
+    border: none;
+    text-align: center;
+    width: 81px;
+    line-height: 26px;
+    padding: 0;
+    float: right;
+    cursor: pointer;
+
+    &:hover {
+      background-color: #d0513c;
+    }
+
+    &:active {
+      background-color: #b94835;
+    }
+  }
+
+  .message {
+    font-weight: 600;
+    margin-bottom: 5px;
+  }
+
+  .link-list {
     background-color: fade(#9b9b9b, 10%);
+    margin-bottom: 15px;
+
+    li {
+      .icon-link {
+        color: #404040;
+        visibility: hidden;
+        opacity: 0.3;
+      }
+
+      &:hover {
+        background-color: #eceaec;
+
+        .icon-link {
+          visibility: visible;
+        }
+      }
+    }
   }
 }

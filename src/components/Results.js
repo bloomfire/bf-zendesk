@@ -10,38 +10,22 @@ class Results extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      message: 'You might find these resources helpful:',
-      results: [
-        {
-          title: 'What time is it in London?',
-          href: 'http://www.google.com/',
-          public: false
-        },
-        {
-          title: 'Why is the sky blue?',
-          href: 'http://www.google.com/',
-          public: true
-        },
-        {
-          title: 'What is the wifi password?',
-          href: 'http://www.google.com/',
-          public: false
-        },
-        {
-          title: 'What do lions do in the woods with...',
-          href: 'http://www.google.com/',
-          public: false
-        }
-      ]
+      message: 'You might find these resources helpful:'
     };
   }
 
   render() {
+    const resultPropSet = this.props.results.map(result => ({
+      key: result.id,
+      title: result.title || result.question,
+      href: `https://rooms.bloomfire.ws/${result.contribution_type}s/${result.id}`,
+      public: result.public,
+    }));
     return (
       <div className="results">
         <p className="message">{this.state.message}</p>
         <ul className="link-list">
-          {this.state.results.map((result, i) => <Result key={i} title={result.title} href={result.href} public={result.public}/>)}
+          {resultPropSet.map(resultProps => <Result {...resultProps}/>)}
         </ul>
       </div>
     );

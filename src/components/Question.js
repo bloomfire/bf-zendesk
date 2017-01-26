@@ -1,12 +1,17 @@
 import React from 'react';
+import classNames from 'classnames';
 
 
 
 class Question extends React.Component {
 
   render() {
+    const classNameForm = classNames(
+      'question',
+      { selected: this.props.isSelected }
+    );
     return (
-      <form className="question">
+      <form className={classNameForm}>
         <textarea name="question" placeholder="Question"></textarea>
         <input type="text" name="description" placeholder="Description (optional)"/>
         <input type="text" name="answerer" placeholder="Assign an Answerer"/>

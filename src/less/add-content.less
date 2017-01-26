@@ -1,5 +1,21 @@
 // add content section
 
 section.add-content {
+  .tabs {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+  }
 
+  .tab {
+    display: table-cell;
+  }
+
+  form {
+    display: none;
+
+    &.selected {
+      display: block;
+    }
+  }
 }

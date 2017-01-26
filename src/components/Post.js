@@ -1,12 +1,17 @@
 import React from 'react';
+import classNames from 'classnames';
 
 
 
 class Post extends React.Component {
 
   render() {
+    const classNameForm = classNames(
+      'post',
+      { selected: this.props.isSelected }
+    );
     return (
-      <form className="post">
+      <form className={classNameForm}>
         <input type="text" name="title" placeholder="Title"/>
         <input type="text" name="description" placeholder="Description (optional)"/>
         <textarea name="body" placeholder="Post body"></textarea>

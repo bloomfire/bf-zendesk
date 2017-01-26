@@ -11,30 +11,15 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.state = {
-      description: ''
-    };
-  }
-
-  getTicketDescription() {
-    this.client.get('ticket.description').then((data) => {
-      this.setState({
-        description: data['ticket.description']
-      });
-    });
-  }
-
-  componentWillMount() {
     this.client = ZAFClient.init();
-    this.getTicketDescription();
   }
 
   render() {
     return (
       <main>
-        <Search query={this.state.description}/>
-        <LinkedResources/>
-        <AddContent/>
+        <Search client={this.client}/>
+        <LinkedResources client={this.client}/>
+        <AddContent client={this.client}/>
       </main>
     );
   }
