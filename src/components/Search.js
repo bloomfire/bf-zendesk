@@ -21,11 +21,16 @@ class Search extends React.Component {
     this.clearSearch = this.clearSearch.bind(this);
   }
 
-  componentWillMount() {
+  componentDidMount() {
     // fetch('https://rooms.bloomfire.ws/api/v2/search?query=video')
     //   .then(response => response.json())
     //   .then(data => { console.log(data); });
     this.performInitialSearch();
+    this.props.resize();
+  }
+
+  componentDidUpdate() {
+    this.props.resize();
   }
 
   getTicketDescription() {

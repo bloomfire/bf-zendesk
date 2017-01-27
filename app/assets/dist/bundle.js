@@ -9629,6 +9629,10 @@ var _react = __webpack_require__(7);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _reactDom = __webpack_require__(85);
+
+var _reactDom2 = _interopRequireDefault(_reactDom);
+
 var _Search = __webpack_require__(93);
 
 var _Search2 = _interopRequireDefault(_Search);
@@ -9661,28 +9665,39 @@ var App = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 
     _this.client = ZAFClient.init();
-    // this.resize();
+    _this.resize = _this.resize.bind(_this);
     return _this;
   }
 
-  // resize() {
-  //   window.addEventListener('resize', (event) => {
-  //     this.client.invoke('resize', {
-  //       width: '100%',
-  //       height: `${document.body.clientHeight}px`
-  //     });
-  //   });
-  // }
-
   _createClass(App, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.node = _reactDom2.default.findDOMNode(this);
+      this.lastHeight = this.node.clientHeight;
+    }
+  }, {
+    key: 'resize',
+    value: function resize() {
+      if (this.node) {
+        var currentHeight = this.node.clientHeight;
+        if (currentHeight !== this.lastHeight) {
+          this.lastHeight = currentHeight;
+          this.client.invoke('resize', {
+            width: '100%',
+            height: currentHeight + 'px'
+          });
+        }
+      }
+    }
+  }, {
     key: 'render',
     value: function render() {
       return _react2.default.createElement(
         'main',
         null,
-        _react2.default.createElement(_Search2.default, { client: this.client }),
-        _react2.default.createElement(_LinkedResources2.default, { client: this.client }),
-        _react2.default.createElement(_AddContent2.default, { client: this.client })
+        _react2.default.createElement(_Search2.default, { client: this.client, resize: this.resize }),
+        _react2.default.createElement(_LinkedResources2.default, { client: this.client, resize: this.resize }),
+        _react2.default.createElement(_AddContent2.default, { client: this.client, resize: this.resize })
       );
     }
   }]);
@@ -9794,6 +9809,16 @@ var AddContent = function (_React$Component) {
   }
 
   _createClass(AddContent, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.props.resize();
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate() {
+      this.props.resize();
+    }
+  }, {
     key: 'toggleCollapsed',
     value: function toggleCollapsed(event) {
       this.setState(function (prevState) {
@@ -9947,6 +9972,16 @@ var LinkedResources = function (_React$Component) {
   }
 
   _createClass(LinkedResources, [{
+    key: 'componentDidMount',
+    value: function componentDidMount() {
+      this.props.resize();
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate() {
+      this.props.resize();
+    }
+  }, {
     key: 'toggleCollapsed',
     value: function toggleCollapsed(event) {
       this.setState(function (prevState) {
@@ -10282,12 +10317,18 @@ var Search = function (_React$Component) {
   }
 
   _createClass(Search, [{
-    key: 'componentWillMount',
-    value: function componentWillMount() {
+    key: 'componentDidMount',
+    value: function componentDidMount() {
       // fetch('https://rooms.bloomfire.ws/api/v2/search?query=video')
       //   .then(response => response.json())
       //   .then(data => { console.log(data); });
       this.performInitialSearch();
+      this.props.resize();
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate() {
+      this.props.resize();
     }
   }, {
     key: 'getTicketDescription',

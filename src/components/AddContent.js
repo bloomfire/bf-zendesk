@@ -21,6 +21,14 @@ class AddContent extends React.Component {
     this.switchTab = this.switchTab.bind(this);
   }
 
+  componentDidMount() {
+    this.props.resize();
+  }
+
+  componentDidUpdate() {
+    this.props.resize();
+  }
+
   toggleCollapsed(event) {
     this.setState(prevState => ({
       isCollapsed: !prevState.isCollapsed

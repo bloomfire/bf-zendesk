@@ -40,6 +40,14 @@ class LinkedResources extends React.Component {
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
   }
 
+  componentDidMount() {
+    this.props.resize();
+  }
+
+  componentDidUpdate() {
+    this.props.resize();
+  }
+
   toggleCollapsed(event) {
     this.setState(prevState => ({
       isCollapsed: !prevState.isCollapsed
