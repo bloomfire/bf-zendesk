@@ -1,10 +1,10 @@
 import React from 'react';
 import _ from 'lodash';
 import { fetchOpts }  from '../utils';
-import searchResponse from '../_fetch/search';
 
 // components
 import Results from './Results';
+import CloseIcon from './CloseIcon';
 
 
 
@@ -18,6 +18,7 @@ class Search extends React.Component {
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.clearSearch = this.clearSearch.bind(this);
   }
 
   componentWillMount() {
@@ -69,14 +70,27 @@ class Search extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
-    console.log(this.state.value);
+    this.getSearchResults(this.state.value)
+      .then(results => {
+        console.log(results);
+        this.setState({ results });
+      });
+  }
+
+  clearSearch(event) {
+    this.setState({
+      value: ''
+    });
   }
 
   render() {
     return (
       <section className="search">
         <form onSubmit={this.handleSubmit}>
-          <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Search your community"/>
+          <div className="input-group">
+            <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Search your community"/>
+            <CloseIcon handleClick={this.clearSearch} active={this.state.value.length > 0}/>
+          </div>
           <input type="submit" value="Search"/>
         </form>
         <Results results={this.state.results}/>

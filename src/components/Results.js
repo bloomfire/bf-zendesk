@@ -17,8 +17,8 @@ class Results extends React.Component {
   render() {
     const resultPropSet = this.props.results.map(result => ({
       key: result.id,
-      title: result.title || result.question,
       href: `https://rooms.bloomfire.ws/${result.contribution_type}s/${result.id}`,
+      title: result.title || result.question,
       public: result.public,
     }));
     return (

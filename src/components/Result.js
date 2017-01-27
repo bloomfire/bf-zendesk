@@ -14,9 +14,8 @@ class Result extends React.Component {
   render() {
     return (
       <li>
-        <LinkIcon/>
-        <a href={this.props.href}>{this.props.title}</a>
         {this.props.public && <p className="public">Public</p>}
+        <a href={this.props.href} target="_blank"><LinkIcon/>{this.props.title}</a>
       </li>
     );
   }

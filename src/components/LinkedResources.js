@@ -49,6 +49,7 @@ class LinkedResources extends React.Component {
   render() {
     const classNameSection = classNames(
       'linked-resources',
+      'section-collapsible',
       { collapsed: this.state.isCollapsed }
     );
     return (

@@ -7,4 +7,27 @@ section.linked-resources {
       height: 8.5px;
     }
   }
+
+  .link-list {
+    background-color: fade(#3fb8cd, 10%);
+
+    li {
+      &:hover {
+        background-color: #d8eff5;
+
+        .icon-link {
+          fill: #429eb2;
+        }
+
+        a {
+          color: #429eb2;
+        }
+      }
+    }
+
+    a {
+      color: #3fb8cd;
+      font-weight: 600;
+    }
+  }
 }

@@ -1,7 +1,17 @@
 // global styles
 
+html {
+  text-rendering: optimizeLegibility;
+  -webkit-font-feature-settings: 'kern', 'kern';
+  font-feature-settings: 'kern', 'kern';
+  -webkit-font-kerning: normal;
+  font-kerning: normal;
+}
+
 body {
+  font-family: proxima-nova, serif;
   font-size: 12.5px;
+  line-height: 20px;
   color: #404040;
   margin: 0;
 }
@@ -9,6 +19,10 @@ body {
 section {
   border-bottom: 1px solid #e4e4e4;
   position: relative;
+
+  &.section-collapsible {
+    padding: 10px 0;
+  }
 
   &.collapsed {
     .icon-caret {
@@ -23,38 +37,74 @@ section {
   .icon-caret {
     display: block;
     width: 9px;
-    height: 9px;
+    height: 20px;
     position: absolute;
-    top: 0;
+    top: 10px;
     right: 0;
     cursor: pointer;
   }
 }
 
 input {
-  outline: none; // this one
+  outline: none;
 }
 
 .link-list {
   .border-radius(4px);
+  padding: 11px 0;
+  margin-bottom: 15px;
 
   li {
-    line-height: 20px;
+    position: relative;
+    padding: 0 10px 0 6px;
 
-    a {
-      &:hover,
-      &:active {
-        text-decoration: underline;
+    &:hover {
+      .icon-link {
+        visibility: visible;
       }
     }
+  }
+
+  a {
+    .truncate;
+    display: inline-block;
+    vertical-align: middle;
+    max-width: 100%;
+  }
+
+  .public ~ a {
+    max-width: 263px;
   }
 
   .icon-link {
     width: 11.5px;
     height: 11.5px;
+    visibility: hidden;
+    margin-right: 5px;
+    cursor: pointer;
+    position: relative;
+    top: -1px;
+  }
+
+  .public {
+    text-transform: uppercase;
+    font-weight: 600;
+    font-size: 8px;
+    letter-spacing: 0.6;
+    position: absolute;
+    right: 10px;
+    top: 0;
   }
 }
 
 .icon-link {
   vertical-align: middle;
+}
+
+.input-group {
+  position: relative;
+}
+
+h2 {
+  font-weight: 600;
 }

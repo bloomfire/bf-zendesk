@@ -36,6 +36,7 @@ class AddContent extends React.Component {
   render() {
     const classNameSection = classNames(
       'add-content',
+      'section-collapsible',
       { collapsed: this.state.isCollapsed }
     );
     return (

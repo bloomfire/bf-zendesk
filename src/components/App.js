@@ -12,7 +12,17 @@ class App extends React.Component {
   constructor(props) {
     super(props);
     this.client = ZAFClient.init();
+    // this.resize();
   }
+
+  // resize() {
+  //   window.addEventListener('resize', (event) => {
+  //     this.client.invoke('resize', {
+  //       width: '100%',
+  //       height: `${document.body.clientHeight}px`
+  //     });
+  //   });
+  // }
 
   render() {
     return (
