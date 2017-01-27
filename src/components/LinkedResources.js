@@ -2,9 +2,9 @@ import React from 'react';
 import classNames from 'classnames';
 
 // components
-import Result from './Result';
-import CaretIcon from './CaretIcon';
+import LinkList from './LinkList';
 import LinkIcon from './LinkIcon';
+import CaretIcon from './CaretIcon';
 
 
 
@@ -16,23 +16,27 @@ class LinkedResources extends React.Component {
       isCollapsed: false,
       resources: [
         {
-          title: 'How do I configure my wifi?',
-          href: 'http://www.google.com/',
+          id: '1',
+          contribution_type: 'Question',
+          question: 'How do I configure my wifi?',
           public: false
         },
         {
-          title: 'What is the wifi password?',
-          href: 'http://www.google.com/',
+          id: '2',
+          contribution_type: 'Question',
+          question: 'What is the wifi password?',
           public: false
         },
         {
+          id: '3',
+          contribution_type: 'Question',
           title: 'Why is the red light on my router blinking constantly?',
-          href: 'http://www.google.com/',
           public: true
         },
         {
+          id: '4',
+          contribution_type: 'Question',
           title: 'How do I turn off my wifi device?',
-          href: 'http://www.google.com/',
           public: false
         }
       ]
@@ -68,9 +72,7 @@ class LinkedResources extends React.Component {
           <div className="links-box">
             <p className="message">No linked resources.</p>
             <p className="instructions">Click <LinkIcon/> to add.</p>
-            <ul className="link-list">
-              {this.state.resources.map((result, i) => <Result key={i} title={result.title} href={result.href} public={result.public}/>)}
-            </ul>
+            <LinkList links={this.state.resources}/>
           </div>
         </div>
       </section>

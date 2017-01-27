@@ -5,7 +5,7 @@ import LinkIcon from './LinkIcon';
 
 
 
-class Result extends React.Component {
+class Link extends React.Component {
 
   constructor(props) {
     super(props);
@@ -24,4 +24,4 @@ class Result extends React.Component {
 
 
 
-export default Result;
+export default Link;

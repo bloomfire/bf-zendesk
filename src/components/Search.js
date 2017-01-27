@@ -3,7 +3,7 @@ import _ from 'lodash';
 import { fetchOpts }  from '../utils';
 
 // components
-import Results from './Results';
+import LinkList from './LinkList';
 import CloseIcon from './CloseIcon';
 
 
@@ -14,7 +14,8 @@ class Search extends React.Component {
     super(props);
     this.state = {
       value: '',
-      results: []
+      results: [],
+      message: 'You might find these resources helpful:'
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -98,7 +99,10 @@ class Search extends React.Component {
           </div>
           <input type="submit" value="Search"/>
         </form>
-        <Results results={this.state.results}/>
+        <div className="results">
+          <p className="message">{this.state.message}</p>
+          <LinkList links={this.state.results}/>
+        </div>
       </section>
     );
   }

@@ -6836,73 +6836,7 @@ var LinkIcon = function LinkIcon(props) {
 exports.default = LinkIcon;
 
 /***/ }),
-/* 56 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _react = __webpack_require__(7);
-
-var _react2 = _interopRequireDefault(_react);
-
-var _LinkIcon = __webpack_require__(55);
-
-var _LinkIcon2 = _interopRequireDefault(_LinkIcon);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-// components
-
-
-var Result = function (_React$Component) {
-  _inherits(Result, _React$Component);
-
-  function Result(props) {
-    _classCallCheck(this, Result);
-
-    return _possibleConstructorReturn(this, (Result.__proto__ || Object.getPrototypeOf(Result)).call(this, props));
-  }
-
-  _createClass(Result, [{
-    key: 'render',
-    value: function render() {
-      return _react2.default.createElement(
-        'li',
-        null,
-        this.props.public && _react2.default.createElement(
-          'p',
-          { className: 'public' },
-          'Public'
-        ),
-        _react2.default.createElement(
-          'a',
-          { href: this.props.href, target: '_blank' },
-          _react2.default.createElement(_LinkIcon2.default, null),
-          this.props.title
-        )
-      );
-    }
-  }]);
-
-  return Result;
-}(_react2.default.Component);
-
-exports.default = Result;
-
-/***/ }),
+/* 56 */,
 /* 57 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -9916,17 +9850,17 @@ var _classnames = __webpack_require__(21);
 
 var _classnames2 = _interopRequireDefault(_classnames);
 
-var _Result = __webpack_require__(56);
+var _LinkList = __webpack_require__(208);
 
-var _Result2 = _interopRequireDefault(_Result);
-
-var _CaretIcon = __webpack_require__(54);
-
-var _CaretIcon2 = _interopRequireDefault(_CaretIcon);
+var _LinkList2 = _interopRequireDefault(_LinkList);
 
 var _LinkIcon = __webpack_require__(55);
 
 var _LinkIcon2 = _interopRequireDefault(_LinkIcon);
+
+var _CaretIcon = __webpack_require__(54);
+
+var _CaretIcon2 = _interopRequireDefault(_CaretIcon);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -9950,20 +9884,24 @@ var LinkedResources = function (_React$Component) {
     _this.state = {
       isCollapsed: false,
       resources: [{
-        title: 'How do I configure my wifi?',
-        href: 'http://www.google.com/',
+        id: '1',
+        contribution_type: 'Question',
+        question: 'How do I configure my wifi?',
         public: false
       }, {
-        title: 'What is the wifi password?',
-        href: 'http://www.google.com/',
+        id: '2',
+        contribution_type: 'Question',
+        question: 'What is the wifi password?',
         public: false
       }, {
+        id: '3',
+        contribution_type: 'Question',
         title: 'Why is the red light on my router blinking constantly?',
-        href: 'http://www.google.com/',
         public: true
       }, {
+        id: '4',
+        contribution_type: 'Question',
         title: 'How do I turn off my wifi device?',
-        href: 'http://www.google.com/',
         public: false
       }]
     };
@@ -10021,13 +9959,7 @@ var LinkedResources = function (_React$Component) {
               _react2.default.createElement(_LinkIcon2.default, null),
               ' to add.'
             ),
-            _react2.default.createElement(
-              'ul',
-              { className: 'link-list' },
-              this.state.resources.map(function (result, i) {
-                return _react2.default.createElement(_Result2.default, { key: i, title: result.title, href: result.href, 'public': result.public });
-              })
-            )
+            _react2.default.createElement(_LinkList2.default, { links: this.state.resources })
           )
         )
       );
@@ -10176,87 +10108,7 @@ var Question = function (_React$Component) {
 exports.default = Question;
 
 /***/ }),
-/* 92 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-
-var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
-
-var _react = __webpack_require__(7);
-
-var _react2 = _interopRequireDefault(_react);
-
-var _Result = __webpack_require__(56);
-
-var _Result2 = _interopRequireDefault(_Result);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
-
-function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
-
-function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
-
-// components
-
-
-var Results = function (_React$Component) {
-  _inherits(Results, _React$Component);
-
-  function Results(props) {
-    _classCallCheck(this, Results);
-
-    var _this = _possibleConstructorReturn(this, (Results.__proto__ || Object.getPrototypeOf(Results)).call(this, props));
-
-    _this.state = {
-      message: 'You might find these resources helpful:'
-    };
-    return _this;
-  }
-
-  _createClass(Results, [{
-    key: 'render',
-    value: function render() {
-      var resultPropSet = this.props.results.map(function (result) {
-        return {
-          key: result.id,
-          href: 'https://rooms.bloomfire.ws/' + result.contribution_type + 's/' + result.id,
-          title: result.title || result.question,
-          public: result.public
-        };
-      });
-      return _react2.default.createElement(
-        'div',
-        { className: 'results' },
-        _react2.default.createElement(
-          'p',
-          { className: 'message' },
-          this.state.message
-        ),
-        _react2.default.createElement(
-          'ul',
-          { className: 'link-list' },
-          resultPropSet.map(function (resultProps) {
-            return _react2.default.createElement(_Result2.default, resultProps);
-          })
-        )
-      );
-    }
-  }]);
-
-  return Results;
-}(_react2.default.Component);
-
-exports.default = Results;
-
-/***/ }),
+/* 92 */,
 /* 93 */
 /***/ (function(module, exports, __webpack_require__) {
 
@@ -10279,9 +10131,9 @@ var _lodash2 = _interopRequireDefault(_lodash);
 
 var _utils = __webpack_require__(95);
 
-var _Results = __webpack_require__(92);
+var _LinkList = __webpack_require__(208);
 
-var _Results2 = _interopRequireDefault(_Results);
+var _LinkList2 = _interopRequireDefault(_LinkList);
 
 var _CloseIcon = __webpack_require__(88);
 
@@ -10308,7 +10160,8 @@ var Search = function (_React$Component) {
 
     _this.state = {
       value: '',
-      results: []
+      results: [],
+      message: 'You might find these resources helpful:'
     };
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
@@ -10413,7 +10266,16 @@ var Search = function (_React$Component) {
           ),
           _react2.default.createElement('input', { type: 'submit', value: 'Search' })
         ),
-        _react2.default.createElement(_Results2.default, { results: this.state.results })
+        _react2.default.createElement(
+          'div',
+          { className: 'results' },
+          _react2.default.createElement(
+            'p',
+            { className: 'message' },
+            this.state.message
+          ),
+          _react2.default.createElement(_LinkList2.default, { links: this.state.results })
+        )
       );
     }
   }]);
@@ -40226,6 +40088,148 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 _reactDom2.default.render(_react2.default.createElement(_App2.default, null), document.getElementById('app'));
 
 // styles
+
+/***/ }),
+/* 199 */,
+/* 200 */,
+/* 201 */,
+/* 202 */,
+/* 203 */,
+/* 204 */,
+/* 205 */,
+/* 206 */,
+/* 207 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(7);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _LinkIcon = __webpack_require__(55);
+
+var _LinkIcon2 = _interopRequireDefault(_LinkIcon);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// components
+
+
+var Link = function (_React$Component) {
+  _inherits(Link, _React$Component);
+
+  function Link(props) {
+    _classCallCheck(this, Link);
+
+    return _possibleConstructorReturn(this, (Link.__proto__ || Object.getPrototypeOf(Link)).call(this, props));
+  }
+
+  _createClass(Link, [{
+    key: 'render',
+    value: function render() {
+      return _react2.default.createElement(
+        'li',
+        null,
+        this.props.public && _react2.default.createElement(
+          'p',
+          { className: 'public' },
+          'Public'
+        ),
+        _react2.default.createElement(
+          'a',
+          { href: this.props.href, target: '_blank' },
+          _react2.default.createElement(_LinkIcon2.default, null),
+          this.props.title
+        )
+      );
+    }
+  }]);
+
+  return Link;
+}(_react2.default.Component);
+
+exports.default = Link;
+
+/***/ }),
+/* 208 */
+/***/ (function(module, exports, __webpack_require__) {
+
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+
+var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
+
+var _react = __webpack_require__(7);
+
+var _react2 = _interopRequireDefault(_react);
+
+var _Link = __webpack_require__(207);
+
+var _Link2 = _interopRequireDefault(_Link);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
+
+function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
+
+function _inherits(subClass, superClass) { if (typeof superClass !== "function" && superClass !== null) { throw new TypeError("Super expression must either be null or a function, not " + typeof superClass); } subClass.prototype = Object.create(superClass && superClass.prototype, { constructor: { value: subClass, enumerable: false, writable: true, configurable: true } }); if (superClass) Object.setPrototypeOf ? Object.setPrototypeOf(subClass, superClass) : subClass.__proto__ = superClass; }
+
+// components
+
+
+var LinkList = function (_React$Component) {
+  _inherits(LinkList, _React$Component);
+
+  function LinkList(props) {
+    _classCallCheck(this, LinkList);
+
+    return _possibleConstructorReturn(this, (LinkList.__proto__ || Object.getPrototypeOf(LinkList)).call(this, props));
+  }
+
+  _createClass(LinkList, [{
+    key: 'render',
+    value: function render() {
+      var linkPropSet = this.props.links.map(function (link) {
+        return {
+          key: link.id,
+          href: 'https://rooms.bloomfire.ws/' + link.contribution_type + 's/' + link.id,
+          title: link.title || link.question,
+          public: link.public
+        };
+      });
+      return _react2.default.createElement(
+        'ul',
+        { className: 'link-list' },
+        linkPropSet.map(function (linkProps) {
+          return _react2.default.createElement(_Link2.default, linkProps);
+        })
+      );
+    }
+  }]);
+
+  return LinkList;
+}(_react2.default.Component);
+
+exports.default = LinkList;
 
 /***/ })
 /******/ ]);
