@@ -17,7 +17,7 @@ class Search extends React.Component {
       value: '', // from search input
       results: [], // results from either initial search or user-initiated search
       searched: false, // user-initiated search performed (not initial search)
-      searching: true // search is currently running
+      processing: false // search is currently running
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -58,6 +58,7 @@ class Search extends React.Component {
   }
 
   performInitialSearch() {
+    this.setState({ processing: true });
     this
       .getTicketDescription()
       .then(this.getSearchResults.bind(this))
@@ -65,15 +66,13 @@ class Search extends React.Component {
         // console.log(results);
         this.setState({
           results,
-          searching: false
+          processing: false
         });
       });
   }
 
   handleChange(event) {
-    this.setState({
-      value: event.target.value
-    });
+    this.setState({ value: event.target.value });
   }
 
   handleSubmit(event) {
@@ -81,22 +80,20 @@ class Search extends React.Component {
     this.setState({
       results: [],
       searched: true,
-      searching: true
+      processing: true
     });
     this.getSearchResults(this.state.value)
       .then(results => {
         // console.log(results);
         this.setState({
           results,
-          searching: false
+          processing: false
         });
       });
   }
 
   clearSearch(event) {
-    this.setState({
-      value: ''
-    });
+    this.setState({ value: '' });
   }
 
   render() {
@@ -105,7 +102,7 @@ class Search extends React.Component {
             'message',
             { 'no-results': !resultsExist }
           ),
-          classNameSubmit = classNames({ processing: this.state.searched && this.state.searching });
+          classNameSubmit = classNames({ processing: this.state.searched && this.state.processing });
     let message;
     if (this.state.searched) {
       message = resultsExist ? 'The following results matched your search:' : 'No results found.';
@@ -122,8 +119,8 @@ class Search extends React.Component {
           <input type="submit" value="Search" className={classNameSubmit}/>
         </form>
         <div className="results">
-          {!this.state.searching && <p className={classNameMessage}>{message}</p>}
-          {(!this.state.searching && this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
+          {!this.state.processing && <p className={classNameMessage}>{message}</p>}
+          {(!this.state.processing && this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
           <LinkList links={this.state.results}/>
         </div>
       </section>

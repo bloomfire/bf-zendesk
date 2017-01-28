@@ -26,10 +26,6 @@ class AddContent extends React.Component {
     this.props.resize();
   }
 
-  componentDidUpdate() {
-    this.props.resize();
-  }
-
   toggleCollapsed(event) {
     this.setState(prevState => ({
       isCollapsed: !prevState.isCollapsed
@@ -37,9 +33,7 @@ class AddContent extends React.Component {
   }
 
   switchTab(event) {
-    this.setState({
-      selectedTabId: event.currentTarget.dataset.id
-    });
+    this.setState({ selectedTabId: event.currentTarget.dataset.id });
   }
 
   render() {

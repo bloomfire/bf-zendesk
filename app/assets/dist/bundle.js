@@ -9749,11 +9749,6 @@ var AddContent = function (_React$Component) {
       this.props.resize();
     }
   }, {
-    key: 'componentDidUpdate',
-    value: function componentDidUpdate() {
-      this.props.resize();
-    }
-  }, {
     key: 'toggleCollapsed',
     value: function toggleCollapsed(event) {
       this.setState(function (prevState) {
@@ -9765,9 +9760,7 @@ var AddContent = function (_React$Component) {
   }, {
     key: 'switchTab',
     value: function switchTab(event) {
-      this.setState({
-        selectedTabId: event.currentTarget.dataset.id
-      });
+      this.setState({ selectedTabId: event.currentTarget.dataset.id });
     }
   }, {
     key: 'render',
@@ -9995,6 +9988,8 @@ var _classnames2 = _interopRequireDefault(_classnames);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -10004,33 +9999,68 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Post = function (_React$Component) {
   _inherits(Post, _React$Component);
 
-  function Post() {
+  function Post(props) {
     _classCallCheck(this, Post);
 
-    return _possibleConstructorReturn(this, (Post.__proto__ || Object.getPrototypeOf(Post)).apply(this, arguments));
+    var _this = _possibleConstructorReturn(this, (Post.__proto__ || Object.getPrototypeOf(Post)).call(this, props));
+
+    _this.state = {
+      title: '', // title input
+      description: '', // description input
+      body: '', // post body textarea
+      linkPost: true, // link checkbox
+      processing: false // post is currently being submitted
+    };
+    _this.handleChange = _this.handleChange.bind(_this);
+    _this.handleSubmit = _this.handleSubmit.bind(_this);
+    return _this;
   }
 
   _createClass(Post, [{
+    key: 'handleChange',
+    value: function handleChange(event) {
+      var target = event.target,
+          // shortcut
+      value = target.type === 'checkbox' ? target.checked : target.value,
+          name = target.name;
+      this.setState(_defineProperty({}, name, value));
+    }
+  }, {
+    key: 'handleSubmit',
+    value: function handleSubmit(event) {
+      event.preventDefault();
+      this.setState({ processing: true });
+      // this.getSearchResults(this.state.value)
+      //   .then(results => {
+      //     // console.log(results);
+      //     this.setState({
+      //       results,
+      //       processing: false
+      //     });
+      //   });
+    }
+  }, {
     key: 'render',
     value: function render() {
-      var classNameForm = (0, _classnames2.default)('post', { selected: this.props.isSelected });
+      var classNameForm = (0, _classnames2.default)('post', { selected: this.props.isSelected }),
+          classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing });
       return _react2.default.createElement(
         'form',
-        { className: classNameForm },
-        _react2.default.createElement('input', { type: 'text', name: 'title', placeholder: 'Title' }),
-        _react2.default.createElement('input', { type: 'text', name: 'description', placeholder: 'Description (optional)' }),
-        _react2.default.createElement('textarea', { className: 'last-field', name: 'body', placeholder: 'Post body' }),
+        { className: classNameForm, onSubmit: this.handleSubmit },
+        _react2.default.createElement('input', { type: 'text', name: 'title', value: this.state.title, placeholder: 'Title', onChange: this.handleChange }),
+        _react2.default.createElement('input', { type: 'text', name: 'description', value: this.state.description, placeholder: 'Description (optional)', onChange: this.handleChange }),
+        _react2.default.createElement('textarea', { className: 'last-field', name: 'body', value: this.state.body, placeholder: 'Post body', onChange: this.handleChange }),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },
-          _react2.default.createElement('input', { type: 'checkbox', name: 'link', id: 'link-post' }),
+          _react2.default.createElement('input', { type: 'checkbox', id: 'link-post', name: 'linkPost', checked: this.state.linkPost, onChange: this.handleChange }),
           _react2.default.createElement(
             'label',
             { htmlFor: 'link-post' },
             'Link Post to Ticket'
           )
         ),
-        _react2.default.createElement('input', { type: 'submit', name: 'publish', value: 'Publish' })
+        _react2.default.createElement('input', { type: 'submit', value: 'Publish', className: classNameSubmit })
       );
     }
   }]);
@@ -10085,20 +10115,20 @@ var Question = function (_React$Component) {
       return _react2.default.createElement(
         'form',
         { className: classNameForm },
-        _react2.default.createElement('textarea', { name: 'question', placeholder: 'Question' }),
-        _react2.default.createElement('input', { type: 'text', name: 'description', placeholder: 'Description (optional)' }),
-        _react2.default.createElement('input', { className: 'last-field', type: 'text', name: 'answerer', placeholder: 'Assign an Answerer' }),
+        _react2.default.createElement('textarea', { placeholder: 'Question' }),
+        _react2.default.createElement('input', { type: 'text', placeholder: 'Description (optional)' }),
+        _react2.default.createElement('input', { className: 'last-field', type: 'text', placeholder: 'Assign an Answerer' }),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },
-          _react2.default.createElement('input', { type: 'checkbox', name: 'link', id: 'link-question' }),
+          _react2.default.createElement('input', { type: 'checkbox', id: 'link-question' }),
           _react2.default.createElement(
             'label',
             { htmlFor: 'link-question' },
             'Link Question to Ticket'
           )
         ),
-        _react2.default.createElement('input', { type: 'submit', name: 'publish', value: 'Publish' })
+        _react2.default.createElement('input', { type: 'submit', value: 'Publish' })
       );
     }
   }]);
@@ -10167,7 +10197,7 @@ var Search = function (_React$Component) {
       value: '', // from search input
       results: [], // results from either initial search or user-initiated search
       searched: false, // user-initiated search performed (not initial search)
-      searching: true // search is currently running
+      processing: false // search is currently running
     };
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
@@ -10222,20 +10252,19 @@ var Search = function (_React$Component) {
     value: function performInitialSearch() {
       var _this2 = this;
 
+      this.setState({ processing: true });
       this.getTicketDescription().then(this.getSearchResults.bind(this)).then(function (results) {
         // console.log(results);
         _this2.setState({
           results: results,
-          searching: false
+          processing: false
         });
       });
     }
   }, {
     key: 'handleChange',
     value: function handleChange(event) {
-      this.setState({
-        value: event.target.value
-      });
+      this.setState({ value: event.target.value });
     }
   }, {
     key: 'handleSubmit',
@@ -10246,29 +10275,27 @@ var Search = function (_React$Component) {
       this.setState({
         results: [],
         searched: true,
-        searching: true
+        processing: true
       });
       this.getSearchResults(this.state.value).then(function (results) {
         // console.log(results);
         _this3.setState({
           results: results,
-          searching: false
+          processing: false
         });
       });
     }
   }, {
     key: 'clearSearch',
     value: function clearSearch(event) {
-      this.setState({
-        value: ''
-      });
+      this.setState({ value: '' });
     }
   }, {
     key: 'render',
     value: function render() {
       var resultsExist = this.state.results.length > 0,
           classNameMessage = (0, _classnames2.default)('message', { 'no-results': !resultsExist }),
-          classNameSubmit = (0, _classnames2.default)({ processing: this.state.searched && this.state.searching });
+          classNameSubmit = (0, _classnames2.default)({ processing: this.state.searched && this.state.processing });
       var message = void 0;
       if (this.state.searched) {
         message = resultsExist ? 'The following results matched your search:' : 'No results found.';
@@ -10292,12 +10319,12 @@ var Search = function (_React$Component) {
         _react2.default.createElement(
           'div',
           { className: 'results' },
-          !this.state.searching && _react2.default.createElement(
+          !this.state.processing && _react2.default.createElement(
             'p',
             { className: classNameMessage },
             message
           ),
-          !this.state.searching && this.state.searched && !resultsExist && _react2.default.createElement(
+          !this.state.processing && this.state.searched && !resultsExist && _react2.default.createElement(
             'p',
             { className: 'sub-message' },
             'Try searching your community.'
