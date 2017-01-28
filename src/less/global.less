@@ -19,9 +19,10 @@ body {
 section {
   border-bottom: 1px solid #e4e4e4;
   position: relative;
+  padding-bottom: 10px;
 
   &.section-collapsible {
-    padding: 10px 0;
+    padding-top: 10px;
   }
 
   &.collapsed {
@@ -43,16 +44,54 @@ section {
     right: 0;
     cursor: pointer;
   }
+
+  .section-content {
+    margin-top: 5px;
+  }
 }
 
+textarea,
 input {
   outline: none;
+}
+
+textarea,
+input[type=text] {
+  .border-radius(2px);
+  border: 1px solid #b8b8b8;
+  font-size: 11px;
+  color: #666;
+  display: block;
+  width: 100%;
+  line-height: 18px;
+  padding: 3px 8px;
+
+  &::-webkit-input-placeholder {
+    font-weight: 300;
+  }
+
+  &:-moz-placeholder {
+    font-weight: 300;
+  }
+
+  &::-moz-placeholder {
+    font-weight: 300;
+  }
+
+  &:-ms-input-placeholder {
+    font-weight: 300;
+  }
+}
+
+textarea {
+  height: 85px;
+  resize: none;
 }
 
 .link-list {
   .border-radius(4px);
   padding: 11px 0;
-  margin-bottom: 15px;
+  margin-bottom: 4px;
 
   li {
     position: relative;

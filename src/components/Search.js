@@ -1,4 +1,5 @@
 import React from 'react';
+import classNames from 'classnames';
 import _ from 'lodash';
 import { fetchOpts }  from '../utils';
 
@@ -13,9 +14,10 @@ class Search extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      value: '',
-      results: [],
-      message: 'You might find these resources helpful:'
+      value: '', // from search input
+      results: [], // results from either initial search or user-initiated search
+      searched: false, // user-initiated search performed (not initial search)
+      searching: true // search is currently running
     };
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
@@ -23,9 +25,6 @@ class Search extends React.Component {
   }
 
   componentDidMount() {
-    // fetch('https://rooms.bloomfire.ws/api/v2/search?query=video')
-    //   .then(response => response.json())
-    //   .then(data => { console.log(data); });
     this.performInitialSearch();
     this.props.resize();
   }
@@ -41,14 +40,14 @@ class Search extends React.Component {
   }
 
   getResources(results) {
-    console.log(results);
+    // console.log(results);
     const resourceURLs = results
                            .filter(result => result.type === 'post' || result.type === 'question')
                            .map(result => `https://rooms.bloomfire.ws/api/v2/${result.type}s/${result.instance.id}`)
                            .slice(0, 5),
           resourceReqs = resourceURLs
                            .map(resourceURL => fetch(resourceURL, fetchOpts).then(response => response.json()));
-    console.log(resourceURLs);
+    // console.log(resourceURLs);
     return Promise.all(resourceReqs);
   }
 
@@ -63,8 +62,11 @@ class Search extends React.Component {
       .getTicketDescription()
       .then(this.getSearchResults.bind(this))
       .then(results => {
-        console.log(results);
-        this.setState({ results });
+        // console.log(results);
+        this.setState({
+          results,
+          searching: false
+        });
       });
   }
 
@@ -76,10 +78,18 @@ class Search extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
+    this.setState({
+      results: [],
+      searched: true,
+      searching: true
+    });
     this.getSearchResults(this.state.value)
       .then(results => {
-        console.log(results);
-        this.setState({ results });
+        // console.log(results);
+        this.setState({
+          results,
+          searching: false
+        });
       });
   }
 
@@ -90,6 +100,18 @@ class Search extends React.Component {
   }
 
   render() {
+    const resultsExist = this.state.results.length > 0,
+          classNameMessage = classNames(
+            'message',
+            { 'no-results': !resultsExist }
+          ),
+          classNameSubmit = classNames({ searching: this.state.searched && this.state.searching });
+    let message;
+    if (this.state.searched) {
+      message = resultsExist ? 'The following results matched your search:' : 'No results found.';
+    } else {
+      message = resultsExist ? 'You might find these resources helpful:' : 'No recommended resources found.';
+    }
     return (
       <section className="search">
         <form onSubmit={this.handleSubmit}>
@@ -97,10 +119,11 @@ class Search extends React.Component {
             <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Search your community"/>
             <CloseIcon handleClick={this.clearSearch} active={this.state.value.length > 0}/>
           </div>
-          <input type="submit" value="Search"/>
+          <input type="submit" value="Search" className={classNameSubmit}/>
         </form>
         <div className="results">
-          <p className="message">{this.state.message}</p>
+          {!this.state.searching && <p className={classNameMessage}>{message}</p>}
+          {(!this.state.searching && this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
           <LinkList links={this.state.results}/>
         </div>
       </section>

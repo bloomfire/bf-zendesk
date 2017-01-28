@@ -9733,9 +9733,10 @@ var AddContent = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (AddContent.__proto__ || Object.getPrototypeOf(AddContent)).call(this, props));
 
+    _this.initialTab = '1';
     _this.state = {
       isCollapsed: false,
-      selectedTabId: '1'
+      selectedTabId: _this.initialTab
     };
     _this.toggleCollapsed = _this.toggleCollapsed.bind(_this);
     _this.switchTab = _this.switchTab.bind(_this);
@@ -9784,7 +9785,7 @@ var AddContent = function (_React$Component) {
         _react2.default.createElement(
           'div',
           { className: 'section-content' },
-          _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab }),
+          _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab, initialTab: this.initialTab }),
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1' }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2' })
         )
@@ -10125,6 +10126,10 @@ var _react = __webpack_require__(7);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _classnames = __webpack_require__(21);
+
+var _classnames2 = _interopRequireDefault(_classnames);
+
 var _lodash = __webpack_require__(112);
 
 var _lodash2 = _interopRequireDefault(_lodash);
@@ -10159,9 +10164,10 @@ var Search = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Search.__proto__ || Object.getPrototypeOf(Search)).call(this, props));
 
     _this.state = {
-      value: '',
-      results: [],
-      message: 'You might find these resources helpful:'
+      value: '', // from search input
+      results: [], // results from either initial search or user-initiated search
+      searched: false, // user-initiated search performed (not initial search)
+      searching: true // search is currently running
     };
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
@@ -10172,9 +10178,6 @@ var Search = function (_React$Component) {
   _createClass(Search, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
-      // fetch('https://rooms.bloomfire.ws/api/v2/search?query=video')
-      //   .then(response => response.json())
-      //   .then(data => { console.log(data); });
       this.performInitialSearch();
       this.props.resize();
     }
@@ -10193,7 +10196,7 @@ var Search = function (_React$Component) {
   }, {
     key: 'getResources',
     value: function getResources(results) {
-      console.log(results);
+      // console.log(results);
       var resourceURLs = results.filter(function (result) {
         return result.type === 'post' || result.type === 'question';
       }).map(function (result) {
@@ -10204,7 +10207,7 @@ var Search = function (_React$Component) {
           return response.json();
         });
       });
-      console.log(resourceURLs);
+      // console.log(resourceURLs);
       return Promise.all(resourceReqs);
     }
   }, {
@@ -10220,8 +10223,11 @@ var Search = function (_React$Component) {
       var _this2 = this;
 
       this.getTicketDescription().then(this.getSearchResults.bind(this)).then(function (results) {
-        console.log(results);
-        _this2.setState({ results: results });
+        // console.log(results);
+        _this2.setState({
+          results: results,
+          searching: false
+        });
       });
     }
   }, {
@@ -10237,9 +10243,17 @@ var Search = function (_React$Component) {
       var _this3 = this;
 
       event.preventDefault();
+      this.setState({
+        results: [],
+        searched: true,
+        searching: true
+      });
       this.getSearchResults(this.state.value).then(function (results) {
-        console.log(results);
-        _this3.setState({ results: results });
+        // console.log(results);
+        _this3.setState({
+          results: results,
+          searching: false
+        });
       });
     }
   }, {
@@ -10252,6 +10266,15 @@ var Search = function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
+      var resultsExist = this.state.results.length > 0,
+          classNameMessage = (0, _classnames2.default)('message', { 'no-results': !resultsExist }),
+          classNameSubmit = (0, _classnames2.default)({ searching: this.state.searched && this.state.searching });
+      var message = void 0;
+      if (this.state.searched) {
+        message = resultsExist ? 'The following results matched your search:' : 'No results found.';
+      } else {
+        message = resultsExist ? 'You might find these resources helpful:' : 'No recommended resources found.';
+      }
       return _react2.default.createElement(
         'section',
         { className: 'search' },
@@ -10264,15 +10287,20 @@ var Search = function (_React$Component) {
             _react2.default.createElement('input', { type: 'text', value: this.state.value, onChange: this.handleChange, placeholder: 'Search your community' }),
             _react2.default.createElement(_CloseIcon2.default, { handleClick: this.clearSearch, active: this.state.value.length > 0 })
           ),
-          _react2.default.createElement('input', { type: 'submit', value: 'Search' })
+          _react2.default.createElement('input', { type: 'submit', value: 'Search', className: classNameSubmit })
         ),
         _react2.default.createElement(
           'div',
           { className: 'results' },
-          _react2.default.createElement(
+          !this.state.searching && _react2.default.createElement(
             'p',
-            { className: 'message' },
-            this.state.message
+            { className: classNameMessage },
+            message
+          ),
+          !this.state.searching && this.state.searched && !resultsExist && _react2.default.createElement(
+            'p',
+            { className: 'sub-message' },
+            'Try searching your community.'
           ),
           _react2.default.createElement(_LinkList2.default, { links: this.state.results })
         )
@@ -10302,6 +10330,10 @@ var _react = __webpack_require__(7);
 
 var _react2 = _interopRequireDefault(_react);
 
+var _classnames = __webpack_require__(21);
+
+var _classnames2 = _interopRequireDefault(_classnames);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -10313,27 +10345,51 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Tabs = function (_React$Component) {
   _inherits(Tabs, _React$Component);
 
-  function Tabs() {
+  function Tabs(props) {
     _classCallCheck(this, Tabs);
 
-    return _possibleConstructorReturn(this, (Tabs.__proto__ || Object.getPrototypeOf(Tabs)).apply(this, arguments));
+    var _this = _possibleConstructorReturn(this, (Tabs.__proto__ || Object.getPrototypeOf(Tabs)).call(this, props));
+
+    _this.state = {
+      selectedTabId: _this.props.initialTab
+    };
+    _this.handleClick = _this.handleClick.bind(_this);
+    return _this;
   }
 
   _createClass(Tabs, [{
-    key: "render",
+    key: 'handleClick',
+    value: function handleClick(event) {
+      this.props.handleClick(event); // run callback passed in via prop
+      this.setState({
+        selectedTabId: event.currentTarget.dataset.id
+      });
+    }
+  }, {
+    key: 'render',
     value: function render() {
+      var classNamePostTab = (0, _classnames2.default)('tab', 'tab-add-post', { selected: this.state.selectedTabId === '1' }),
+          classNameQuestionTab = (0, _classnames2.default)('tab', 'tab-add-question', { selected: this.state.selectedTabId === '2' });
       return _react2.default.createElement(
-        "ul",
-        { className: "tabs" },
+        'ul',
+        { className: 'tabs' },
         _react2.default.createElement(
-          "li",
-          { className: "tab tab-add-post", "data-id": "1", onClick: this.props.handleClick },
-          "Add a Post"
+          'li',
+          { className: classNamePostTab, 'data-id': '1', onClick: this.handleClick },
+          _react2.default.createElement(
+            'span',
+            null,
+            'Add a Post'
+          )
         ),
         _react2.default.createElement(
-          "li",
-          { className: "tab tab-add-question", "data-id": "2", onClick: this.props.handleClick },
-          "Add a Question"
+          'li',
+          { className: classNameQuestionTab, 'data-id': '2', onClick: this.handleClick },
+          _react2.default.createElement(
+            'span',
+            null,
+            'Add a Question'
+          )
         )
       );
     }
@@ -10369,7 +10425,7 @@ exports = module.exports = __webpack_require__(97)();
 
 
 // module
-exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12.5px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n}\nsection.section-collapsible {\n  padding: 10px 0;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\ninput {\n  outline: none;\n}\n.link-list {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 15px;\n}\n.link-list li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.link-list li:hover .icon-link {\n  visibility: visible;\n}\n.link-list a {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  display: inline-block;\n  vertical-align: middle;\n  max-width: 100%;\n}\n.link-list .public ~ a {\n  max-width: 263px;\n}\n.link-list .icon-link {\n  width: 11.5px;\n  height: 11.5px;\n  visibility: hidden;\n  margin-right: 5px;\n  cursor: pointer;\n  position: relative;\n  top: -1px;\n}\n.link-list .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-size: 11px;\n  line-height: 24px;\n  padding: 0 22px 0 8px;\n  color: #666;\n  display: block;\n  width: 100%;\n}\nsection.search input[type=text]::-webkit-input-placeholder {\n  font-weight: 300;\n}\nsection.search input[type=text]:-moz-placeholder {\n  font-weight: 300;\n}\nsection.search input[type=text]::-moz-placeholder {\n  font-weight: 300;\n}\nsection.search input[type=text]:-ms-input-placeholder {\n  font-weight: 300;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search input[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12.5px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\nsection.search input[type=submit]:hover {\n  background-color: #d0513c;\n}\nsection.search input[type=submit]:active {\n  background-color: #b94835;\n}\nsection.search .message {\n  font-size: 12.5px;\n  font-weight: 600;\n  margin-bottom: 5px;\n}\nsection.search .link-list {\n  background-color: rgba(155, 155, 155, 0.1);\n}\nsection.search .link-list li:hover {\n  background-color: #eceaec;\n}\nsection.search .link-list li:hover a {\n  font-weight: 600;\n}\nsection.search .link-list .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n}\nsection.search .link-list .icon-link:hover,\nsection.search .link-list .icon-link:active {\n  opacity: 0.5;\n}\nsection.search .link-list a {\n  color: inherit;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 8.5px;\n  height: 8.5px;\n}\nsection.linked-resources .link-list {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources .link-list li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources .link-list li:hover .icon-link {\n  fill: #429eb2;\n}\nsection.linked-resources .link-list li:hover a {\n  color: #429eb2;\n}\nsection.linked-resources .link-list a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form.selected {\n  display: block;\n}\n", ""]);
+exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12.5px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput {\n  outline: none;\n}\ntextarea,\ninput[type=text] {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.link-list {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n}\n.link-list li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.link-list li:hover .icon-link {\n  visibility: visible;\n}\n.link-list a {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  display: inline-block;\n  vertical-align: middle;\n  max-width: 100%;\n}\n.link-list .public ~ a {\n  max-width: 263px;\n}\n.link-list .icon-link {\n  width: 11.5px;\n  height: 11.5px;\n  visibility: hidden;\n  margin-right: 5px;\n  cursor: pointer;\n  position: relative;\n  top: -1px;\n}\n.link-list .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search input[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12.5px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\nsection.search input[type=submit]:hover {\n  background-color: #d0513c;\n}\nsection.search input[type=submit]:active {\n  background-color: #b94835;\n}\nsection.search input[type=submit].searching {\n  background-color: #47af3a;\n}\nsection.search .message {\n  font-size: 12.5px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .link-list {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search .link-list li:hover {\n  background-color: #eceaec;\n}\nsection.search .link-list li:hover a {\n  font-weight: 600;\n}\nsection.search .link-list .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n}\nsection.search .link-list .icon-link:hover,\nsection.search .link-list .icon-link:active {\n  opacity: 0.5;\n}\nsection.search .link-list a {\n  color: inherit;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 8.5px;\n  height: 8.5px;\n}\nsection.linked-resources .link-list {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources .link-list li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources .link-list li:hover .icon-link {\n  fill: #429eb2;\n}\nsection.linked-resources .link-list li:hover a {\n  color: #429eb2;\n}\nsection.linked-resources .link-list a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea {\n  margin-bottom: 12px;\n}\n", ""]);
 
 // exports
 
@@ -40208,6 +40264,9 @@ var LinkList = function (_React$Component) {
   _createClass(LinkList, [{
     key: 'render',
     value: function render() {
+      if (this.props.links.length === 0) {
+        return null;
+      }
       var linkPropSet = this.props.links.map(function (link) {
         return {
           key: link.id,

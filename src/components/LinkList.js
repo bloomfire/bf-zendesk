@@ -12,6 +12,9 @@ class LinkList extends React.Component {
   }
 
   render() {
+    if (this.props.links.length === 0) {
+      return null;
+    }
     const linkPropSet = this.props.links.map(link => ({
       key: link.id,
       href: `https://rooms.bloomfire.ws/${link.contribution_type}s/${link.id}`,

@@ -13,9 +13,10 @@ class AddContent extends React.Component {
 
   constructor(props) {
     super(props);
+    this.initialTab = '1';
     this.state = {
       isCollapsed: false,
-      selectedTabId: '1'
+      selectedTabId: this.initialTab
     };
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
     this.switchTab = this.switchTab.bind(this);
@@ -52,7 +53,7 @@ class AddContent extends React.Component {
         <h2>Add content to Bloomfire</h2>
         <CaretIcon handleClick={this.toggleCollapsed}/>
         <div className="section-content">
-          <Tabs handleClick={this.switchTab}/>
+          <Tabs handleClick={this.switchTab} initialTab={this.initialTab}/>
           <Post isSelected={this.state.selectedTabId === '1'}/>
           <Question isSelected={this.state.selectedTabId === '2'}/>
         </div>
