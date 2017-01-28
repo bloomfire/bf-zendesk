@@ -14,7 +14,7 @@ class Question extends React.Component {
       <form className={classNameForm}>
         <textarea name="question" placeholder="Question"></textarea>
         <input type="text" name="description" placeholder="Description (optional)"/>
-        <input type="text" name="answerer" placeholder="Assign an Answerer"/>
+        <input className="last-field" type="text" name="answerer" placeholder="Assign an Answerer"/>
         <p className="link-to-ticket">
           <input type="checkbox" name="link" id="link-question"/>
           <label htmlFor="link-question">Link Question to Ticket</label>

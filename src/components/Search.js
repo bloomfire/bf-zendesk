@@ -105,7 +105,7 @@ class Search extends React.Component {
             'message',
             { 'no-results': !resultsExist }
           ),
-          classNameSubmit = classNames({ searching: this.state.searched && this.state.searching });
+          classNameSubmit = classNames({ processing: this.state.searched && this.state.searching });
     let message;
     if (this.state.searched) {
       message = resultsExist ? 'The following results matched your search:' : 'No results found.';

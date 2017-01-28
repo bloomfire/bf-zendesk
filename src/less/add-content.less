@@ -50,6 +50,7 @@ section.add-content {
   }
 
   form {
+    .clearfix;
     display: none;
 
     &.selected {
@@ -59,6 +60,14 @@ section.add-content {
 
   input[type=text],
   textarea {
-    margin-bottom: 12px;
+    margin-bottom: 11px;
+
+    &.last-field {
+      margin-bottom: 9px;
+    }
+  }
+
+  .link-to-ticket {
+    float: left;
   }
 }
