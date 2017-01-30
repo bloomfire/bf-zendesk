@@ -9680,10 +9680,11 @@ var App = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 
     _this.client = ZAFClient.init();
+    _this.resizeInterval = null;
+    // state
     _this.state = {
       linkedResources: []
     };
-    _this.getLinkedResources();
     // bindings
     _this.resize = _this.resize.bind(_this);
     return _this;
@@ -9694,6 +9695,7 @@ var App = function (_React$Component) {
     value: function componentDidMount() {
       this.node = _reactDom2.default.findDOMNode(this);
       this.lastHeight = this.node.clientHeight;
+      this.getLinkedResources();
     }
   }, {
     key: 'getLinkedResources',
@@ -9706,11 +9708,7 @@ var App = function (_React$Component) {
             linkedResourceAPIURLs = resourceArr.map(function (resource) {
           return (0, _utils.getResourceAPIURL)(resource.type, resource.id);
         });
-        console.log(2);
-        console.log(linkedResourceAPIURLs);
         (0, _utils.getResources)(linkedResourceAPIURLs).then(function (linkedResources) {
-          console.log(1);
-          console.log(linkedResources);
           _this2.setState({ linkedResources: linkedResources });
         });
       });
@@ -9719,6 +9717,7 @@ var App = function (_React$Component) {
     key: 'resize',
     value: function resize() {
       if (this.node) {
+        // if this component exists in the DOM, resize it
         var currentHeight = this.node.clientHeight;
         if (currentHeight !== this.lastHeight) {
           this.lastHeight = currentHeight;
@@ -9726,7 +9725,11 @@ var App = function (_React$Component) {
             width: '100%',
             height: currentHeight + 'px'
           });
+          clearInterval(this.resizeInterval);
         }
+      } else if (!this.resizeInterval) {
+        // if we're not already checking for this component to exist in the DOM
+        this.resizeInterval = setInterval(this.resize.bind(this), 100); // start checking for DOM existence in order to resize
       }
     }
   }, {
@@ -10146,6 +10149,7 @@ var Post = function (_React$Component) {
   function Post(props) {
     _classCallCheck(this, Post);
 
+    // state
     var _this = _possibleConstructorReturn(this, (Post.__proto__ || Object.getPrototypeOf(Post)).call(this, props));
 
     _this.state = {
@@ -10155,6 +10159,7 @@ var Post = function (_React$Component) {
       linkPost: true, // link checkbox
       processing: false // post is currently being submitted
     };
+    // bindings
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
     return _this;
@@ -10334,6 +10339,7 @@ var Search = function (_React$Component) {
   function Search(props) {
     _classCallCheck(this, Search);
 
+    // state
     var _this = _possibleConstructorReturn(this, (Search.__proto__ || Object.getPrototypeOf(Search)).call(this, props));
 
     _this.state = {
@@ -10342,6 +10348,7 @@ var Search = function (_React$Component) {
       searched: false, // user-initiated search performed (not initial search)
       processing: false // search is currently running
     };
+    // bindings
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
     _this.clearSearch = _this.clearSearch.bind(_this);
@@ -10598,7 +10605,6 @@ var encodeLinkedResources = function encodeLinkedResources(resourceArr) {
   var resourceTxt = resourceArr.map(function (resource) {
     return resource.type + '|' + resource.id;
   }).join('\r\n');
-  console.log(resourceTxt);
   return resourceTxt;
 };
 
@@ -10611,7 +10617,6 @@ var decodeLinkedResources = function decodeLinkedResources(resourceTxt) {
       id: resource[1]
     };
   });
-  console.log(resourceArr);
   return resourceArr;
 };
 

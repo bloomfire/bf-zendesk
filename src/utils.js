@@ -19,7 +19,6 @@ const getResourceAPIURL = (type, id) => `https://rooms.bloomfire.ws/api/v2/${typ
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
 const encodeLinkedResources = function (resourceArr) {
   const resourceTxt = resourceArr.map(resource => `${resource.type}|${resource.id}`).join('\r\n');
-  console.log(resourceTxt);
   return resourceTxt;
 };
 
@@ -32,7 +31,6 @@ const decodeLinkedResources = function (resourceTxt) {
       id: resource[1]
     };
   });
-  console.log(resourceArr);
   return resourceArr;
 };
 

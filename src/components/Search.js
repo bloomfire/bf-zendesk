@@ -16,12 +16,14 @@ class Search extends React.Component {
 
   constructor(props) {
     super(props);
+    // state
     this.state = {
       value: '', // from search input
       results: [], // results from either initial search or user-initiated search
       searched: false, // user-initiated search performed (not initial search)
       processing: false // search is currently running
     };
+    // bindings
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.clearSearch = this.clearSearch.bind(this);

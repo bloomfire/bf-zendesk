@@ -7,6 +7,7 @@ class Post extends React.Component {
 
   constructor(props) {
     super(props);
+    // state
     this.state = {
       title: '', // title input
       description: '', // description input
@@ -14,6 +15,7 @@ class Post extends React.Component {
       linkPost: true, // link checkbox
       processing: false // post is currently being submitted
     };
+    // bindings
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
   }
