@@ -12,35 +12,11 @@ class LinkedResources extends React.Component {
 
   constructor(props) {
     super(props);
+    // state
     this.state = {
-      isCollapsed: false,
-      resources: [
-        {
-          id: '1',
-          contribution_type: 'Question',
-          question: 'How do I configure my wifi?',
-          public: false
-        },
-        {
-          id: '2',
-          contribution_type: 'Question',
-          question: 'What is the wifi password?',
-          public: false
-        },
-        {
-          id: '3',
-          contribution_type: 'Question',
-          title: 'Why is the red light on my router blinking constantly?',
-          public: true
-        },
-        {
-          id: '4',
-          contribution_type: 'Question',
-          title: 'How do I turn off my wifi device?',
-          public: false
-        }
-      ]
+      isCollapsed: false
     };
+    // bindings
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
   }
 
@@ -72,7 +48,7 @@ class LinkedResources extends React.Component {
           <div className="links-box">
             <p className="message">No linked resources.</p>
             <p className="instructions">Click <LinkIcon/> to add.</p>
-            <LinkList links={this.state.resources}/>
+            <LinkList links={this.props.links}/>
           </div>
         </div>
       </section>

@@ -1,7 +1,10 @@
 import React from 'react';
 import classNames from 'classnames';
 import _ from 'lodash';
-import { fetchOpts }  from '../utils';
+import {
+  fetchOpts,
+  getResources
+}  from '../utils';
 
 // components
 import LinkList from './LinkList';
@@ -39,22 +42,16 @@ class Search extends React.Component {
              .then(data => _.trim(data['ticket.description']));
   }
 
-  getResources(results) {
-    // console.log(results);
-    const resourceURLs = results
-                           .filter(result => result.type === 'post' || result.type === 'question')
-                           .map(result => `https://rooms.bloomfire.ws/api/v2/${result.type}s/${result.instance.id}`)
-                           .slice(0, 5),
-          resourceReqs = resourceURLs
-                           .map(resourceURL => fetch(resourceURL, fetchOpts).then(response => response.json()));
-    // console.log(resourceURLs);
-    return Promise.all(resourceReqs);
-  }
-
   getSearchResults(query) {
     return fetch(`https://rooms.bloomfire.ws/api/v2/search?query=${encodeURIComponent(query)}`, fetchOpts)
              .then(response => response.json())
-             .then(this.getResources.bind(this));
+             .then(results => {
+               const resourceURLs = results
+                                      .filter(result => result.type === 'post' || result.type === 'question')
+                                      .map(result => `https://rooms.bloomfire.ws/api/v2/${result.type}s/${result.instance.id}`)
+                                      .slice(0, 5);
+               return getResources(resourceURLs);
+             });
   }
 
   performInitialSearch() {
@@ -63,7 +60,6 @@ class Search extends React.Component {
       .getTicketDescription()
       .then(this.getSearchResults.bind(this))
       .then(results => {
-        // console.log(results);
         this.setState({
           results,
           processing: false
@@ -84,7 +80,6 @@ class Search extends React.Component {
     });
     this.getSearchResults(this.state.value)
       .then(results => {
-        // console.log(results);
         this.setState({
           results,
           processing: false
