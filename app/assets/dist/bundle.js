@@ -9898,9 +9898,10 @@ var AddContent = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (AddContent.__proto__ || Object.getPrototypeOf(AddContent)).call(this, props));
 
+    _this.initialTabId = '1';
     _this.state = {
       isCollapsed: false,
-      selectedTabId: '1'
+      selectedTabId: _this.initialTabId
     };
     _this.toggleCollapsed = _this.toggleCollapsed.bind(_this);
     _this.switchTab = _this.switchTab.bind(_this);
@@ -9910,6 +9911,11 @@ var AddContent = function (_React$Component) {
   _createClass(AddContent, [{
     key: 'componentDidMount',
     value: function componentDidMount() {
+      this.props.resize();
+    }
+  }, {
+    key: 'componentDidUpdate',
+    value: function componentDidUpdate() {
       this.props.resize();
     }
   }, {
@@ -9943,7 +9949,7 @@ var AddContent = function (_React$Component) {
           'div',
           { className: 'section-content' },
           _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab,
-            initialTab: this.state.selectedTabId }),
+            initialTabId: this.initialTabId }),
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1' }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2' })
         )
@@ -10623,7 +10629,7 @@ var Tabs = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Tabs.__proto__ || Object.getPrototypeOf(Tabs)).call(this, props));
 
     _this.state = {
-      selectedTabId: _this.props.initialTab
+      selectedTabId: _this.props.initialTabId
     };
     _this.handleClick = _this.handleClick.bind(_this);
     return _this;

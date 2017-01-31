@@ -8,7 +8,7 @@ class Tabs extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedTabId: this.props.initialTab
+      selectedTabId: this.props.initialTabId
     };
     this.handleClick = this.handleClick.bind(this);
   }

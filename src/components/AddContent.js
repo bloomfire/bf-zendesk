@@ -13,15 +13,20 @@ class AddContent extends React.Component {
 
   constructor(props) {
     super(props);
+    this.initialTabId = '1';
     this.state = {
       isCollapsed: false,
-      selectedTabId: '1'
+      selectedTabId: this.initialTabId
     };
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
     this.switchTab = this.switchTab.bind(this);
   }
 
   componentDidMount() {
+    this.props.resize();
+  }
+
+  componentDidUpdate() {
     this.props.resize();
   }
 
@@ -47,7 +52,7 @@ class AddContent extends React.Component {
         <CaretIcon handleClick={this.toggleCollapsed}/>
         <div className="section-content">
           <Tabs handleClick={this.switchTab}
-                initialTab={this.state.selectedTabId}/>
+                initialTabId={this.initialTabId}/>
           <Post isSelected={this.state.selectedTabId === '1'}/>
           <Question isSelected={this.state.selectedTabId === '2'}/>
         </div>
