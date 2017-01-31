@@ -110,10 +110,16 @@ class Search extends React.Component {
       <section className="search">
         <form onSubmit={this.handleSubmit}>
           <div className="input-group">
-            <input type="text" value={this.state.value} onChange={this.handleChange} placeholder="Search your community"/>
-            <CloseIcon handleClick={this.clearSearch} active={this.state.value.length > 0}/>
+            <input type="text"
+                   value={this.state.value}
+                   onChange={this.handleChange}
+                   placeholder="Search your community"/>
+            <CloseIcon handleClick={this.clearSearch}
+                       active={this.state.value.length > 0}/>
           </div>
-          <input type="submit" value="Search" className={classNameSubmit}/>
+          <input type="submit"
+                 value="Search"
+                 className={classNameSubmit}/>
         </form>
         <div className="results">
           {!this.state.processing && <p className={classNameMessage}>{message}</p>}

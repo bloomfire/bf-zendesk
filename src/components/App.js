@@ -64,9 +64,13 @@ class App extends React.Component {
   render() {
     return (
       <main>
-        <Search client={this.client} resize={this.resize}/>
-        <LinkedResources client={this.client} resize={this.resize} links={this.state.linkedResources}/>
-        <AddContent client={this.client} resize={this.resize}/>
+        <Search client={this.client}
+                resize={this.resize}/>
+        <LinkedResources client={this.client}
+                         resize={this.resize}
+                         links={this.state.linkedResources}/>
+        <AddContent client={this.client}
+                    resize={this.resize}/>
       </main>
     );
   }

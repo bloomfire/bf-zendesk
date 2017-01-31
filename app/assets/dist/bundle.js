@@ -6811,7 +6811,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var CaretIcon = function CaretIcon(props) {
   return _react2.default.createElement(
     "svg",
-    { className: "icon icon-caret", viewBox: "0 0 101 59", onClick: props.handleClick },
+    { className: "icon icon-caret",
+      viewBox: "0 0 101 59",
+      onClick: props.handleClick },
     _react2.default.createElement("path", { d: "M100.602 50.352c0 .868-.334 1.636-1.002 2.304l-5.01 5.01c-.668.668-1.437 1.002-2.305 1.002-.868 0-1.637-.334-2.305-1.002l-39.378-39.38-39.38 39.38c-.667.668-1.435 1.002-2.304 1.002-.868 0-1.636-.334-2.304-1.002l-5.01-5.01C.936 51.988.602 51.22.602 50.352c0-.87.334-1.637 1.002-2.305L48.297 1.354C48.965.686 49.733.352 50.602.352c.868 0 1.636.334 2.304 1.002L99.6 48.047c.668.668 1.002 1.436 1.002 2.305z" })
   );
 };
@@ -6838,7 +6840,8 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 var LinkIcon = function LinkIcon(props) {
   return _react2.default.createElement(
     "svg",
-    { className: "icon icon-link", viewBox: "0 0 101 101" },
+    { className: "icon icon-link",
+      viewBox: "0 0 101 101" },
     _react2.default.createElement("path", { d: "M88.36 73.654c0-1.634-.572-3.022-1.715-4.166L73.9 56.743c-1.144-1.144-2.533-1.716-4.167-1.716-1.716 0-3.186.654-4.412 1.96.124.123.512.5 1.165 1.134.654.634 1.093 1.074 1.318 1.32.224.244.53.632.92 1.163.387.53.652 1.052.795 1.562.143.51.215 1.073.215 1.685 0 1.634-.572 3.023-1.716 4.167-1.144 1.144-2.533 1.716-4.167 1.716-.612 0-1.174-.072-1.685-.215-.51-.143-1.03-.408-1.562-.796-.53-.388-.92-.695-1.164-.92-.246-.224-.686-.663-1.32-1.317-.632-.653-1.01-1.04-1.132-1.164-1.348 1.267-2.022 2.758-2.022 4.474 0 1.634.572 3.023 1.715 4.167l12.624 12.685c1.103 1.103 2.492 1.654 4.167 1.654 1.635 0 3.023-.532 4.167-1.594l9.008-8.946c1.143-1.144 1.715-2.512 1.715-4.106zM45.284 30.456c0-1.634-.572-3.023-1.715-4.167L30.945 13.604c-1.144-1.143-2.533-1.715-4.167-1.715-1.594 0-2.983.55-4.167 1.654l-9.008 8.946c-1.143 1.144-1.715 2.512-1.715 4.106 0 1.634.572 3.022 1.715 4.166L26.35 43.507c1.103 1.103 2.492 1.655 4.167 1.655 1.716 0 3.186-.633 4.412-1.9-.124-.122-.512-.5-1.165-1.133-.654-.634-1.093-1.074-1.318-1.32-.224-.244-.53-.632-.92-1.163-.387-.53-.652-1.052-.795-1.562-.143-.51-.215-1.073-.215-1.685 0-1.634.572-3.023 1.716-4.167 1.144-1.144 2.533-1.716 4.167-1.716.612 0 1.174.072 1.685.215.51.143 1.03.408 1.562.796.53.388.92.695 1.164.92.246.224.686.663 1.32 1.317.632.653 1.01 1.04 1.132 1.164 1.348-1.267 2.022-2.758 2.022-4.474zm54.84 43.198c0 4.902-1.735 9.05-5.207 12.44l-9.008 8.945c-3.39 3.39-7.537 5.085-12.44 5.085-4.942 0-9.11-1.736-12.5-5.208L48.35 82.233c-3.39-3.39-5.086-7.537-5.086-12.44 0-5.023 1.798-9.292 5.392-12.805l-5.392-5.392c-3.513 3.594-7.76 5.392-12.745 5.392-4.902 0-9.068-1.716-12.5-5.147L5.272 39.097c-3.43-3.432-5.147-7.598-5.147-12.5s1.736-9.05 5.208-12.44l9.008-8.945C17.73 1.82 21.878.126 26.78.126c4.942 0 9.11 1.736 12.5 5.208L51.9 18.017c3.39 3.39 5.086 7.537 5.086 12.44 0 5.023-1.798 9.292-5.392 12.805l5.392 5.392c3.513-3.594 7.76-5.392 12.745-5.392 4.902 0 9.068 1.716 12.5 5.147l12.745 12.744c3.43 3.432 5.147 7.598 5.147 12.5z" })
   );
 };
@@ -9797,9 +9800,13 @@ var App = function (_React$Component) {
       return _react2.default.createElement(
         'main',
         null,
-        _react2.default.createElement(_Search2.default, { client: this.client, resize: this.resize }),
-        _react2.default.createElement(_LinkedResources2.default, { client: this.client, resize: this.resize, links: this.state.linkedResources }),
-        _react2.default.createElement(_AddContent2.default, { client: this.client, resize: this.resize })
+        _react2.default.createElement(_Search2.default, { client: this.client,
+          resize: this.resize }),
+        _react2.default.createElement(_LinkedResources2.default, { client: this.client,
+          resize: this.resize,
+          links: this.state.linkedResources }),
+        _react2.default.createElement(_AddContent2.default, { client: this.client,
+          resize: this.resize })
       );
     }
   }]);
@@ -9891,10 +9898,9 @@ var AddContent = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (AddContent.__proto__ || Object.getPrototypeOf(AddContent)).call(this, props));
 
-    _this.initialTab = '1';
     _this.state = {
       isCollapsed: false,
-      selectedTabId: _this.initialTab
+      selectedTabId: '1'
     };
     _this.toggleCollapsed = _this.toggleCollapsed.bind(_this);
     _this.switchTab = _this.switchTab.bind(_this);
@@ -9936,7 +9942,8 @@ var AddContent = function (_React$Component) {
         _react2.default.createElement(
           'div',
           { className: 'section-content' },
-          _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab, initialTab: this.initialTab }),
+          _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab,
+            initialTab: this.state.selectedTabId }),
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1' }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2' })
         )
@@ -9974,7 +9981,9 @@ var CloseIcon = function CloseIcon(props) {
   var classNameIcon = (0, _classnames2.default)('icon', 'icon-close', { active: props.active });
   return _react2.default.createElement(
     'svg',
-    { className: classNameIcon, viewBox: '0 0 101 101', onClick: props.handleClick },
+    { className: classNameIcon,
+      viewBox: '0 0 101 101',
+      onClick: props.handleClick },
     _react2.default.createElement('path', { d: 'M40.398 50.5L2.592 88.306c-2.79 2.79-2.79 7.312 0 10.102s7.312 2.79 10.102 0L50.5 60.602l37.806 37.806c2.79 2.79 7.312 2.79 10.102 0s2.79-7.312 0-10.102L60.602 50.5l37.806-37.806c2.79-2.79 2.79-7.312 0-10.102s-7.312-2.79-10.102 0L50.5 40.398 12.694 2.592c-2.79-2.79-7.312-2.79-10.102 0s-2.79 7.312 0 10.102L40.398 50.5z' })
   );
 };
@@ -10035,7 +10044,8 @@ var Link = function (_React$Component) {
         ),
         _react2.default.createElement(
           'a',
-          { href: this.props.href, target: '_blank' },
+          { href: this.props.href,
+            target: '_blank' },
           _react2.default.createElement(_LinkIcon2.default, null),
           this.props.title
         )
@@ -10263,21 +10273,40 @@ var Post = function (_React$Component) {
           classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing });
       return _react2.default.createElement(
         'form',
-        { className: classNameForm, onSubmit: this.handleSubmit },
-        _react2.default.createElement('input', { type: 'text', name: 'title', value: this.state.title, placeholder: 'Title', onChange: this.handleChange }),
-        _react2.default.createElement('input', { type: 'text', name: 'description', value: this.state.description, placeholder: 'Description (optional)', onChange: this.handleChange }),
-        _react2.default.createElement('textarea', { className: 'last-field', name: 'body', value: this.state.body, placeholder: 'Post body', onChange: this.handleChange }),
+        { className: classNameForm,
+          onSubmit: this.handleSubmit },
+        _react2.default.createElement('input', { type: 'text',
+          name: 'title',
+          value: this.state.title,
+          placeholder: 'Title',
+          onChange: this.handleChange }),
+        _react2.default.createElement('input', { type: 'text',
+          name: 'description',
+          value: this.state.description,
+          placeholder: 'Description (optional)',
+          onChange: this.handleChange }),
+        _react2.default.createElement('textarea', { className: 'last-field',
+          name: 'body',
+          value: this.state.body,
+          placeholder: 'Post body',
+          onChange: this.handleChange }),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },
-          _react2.default.createElement('input', { type: 'checkbox', id: 'link-post', name: 'linkPost', checked: this.state.linkPost, onChange: this.handleChange }),
+          _react2.default.createElement('input', { type: 'checkbox',
+            id: 'link-post',
+            name: 'linkPost',
+            checked: this.state.linkPost,
+            onChange: this.handleChange }),
           _react2.default.createElement(
             'label',
             { htmlFor: 'link-post' },
             'Link Post to Ticket'
           )
         ),
-        _react2.default.createElement('input', { type: 'submit', value: 'Publish', className: classNameSubmit })
+        _react2.default.createElement('input', { type: 'submit',
+          value: 'Publish',
+          className: classNameSubmit })
       );
     }
   }]);
@@ -10517,10 +10546,16 @@ var Search = function (_React$Component) {
           _react2.default.createElement(
             'div',
             { className: 'input-group' },
-            _react2.default.createElement('input', { type: 'text', value: this.state.value, onChange: this.handleChange, placeholder: 'Search your community' }),
-            _react2.default.createElement(_CloseIcon2.default, { handleClick: this.clearSearch, active: this.state.value.length > 0 })
+            _react2.default.createElement('input', { type: 'text',
+              value: this.state.value,
+              onChange: this.handleChange,
+              placeholder: 'Search your community' }),
+            _react2.default.createElement(_CloseIcon2.default, { handleClick: this.clearSearch,
+              active: this.state.value.length > 0 })
           ),
-          _react2.default.createElement('input', { type: 'submit', value: 'Search', className: classNameSubmit })
+          _react2.default.createElement('input', { type: 'submit',
+            value: 'Search',
+            className: classNameSubmit })
         ),
         _react2.default.createElement(
           'div',
@@ -10612,7 +10647,9 @@ var Tabs = function (_React$Component) {
         { className: 'tabs' },
         _react2.default.createElement(
           'li',
-          { className: classNamePostTab, 'data-id': '1', onClick: this.handleClick },
+          { className: classNamePostTab,
+            'data-id': '1',
+            onClick: this.handleClick },
           _react2.default.createElement(
             'span',
             null,
@@ -10621,7 +10658,9 @@ var Tabs = function (_React$Component) {
         ),
         _react2.default.createElement(
           'li',
-          { className: classNameQuestionTab, 'data-id': '2', onClick: this.handleClick },
+          { className: classNameQuestionTab,
+            'data-id': '2',
+            onClick: this.handleClick },
           _react2.default.createElement(
             'span',
             null,

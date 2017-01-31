@@ -33,8 +33,12 @@ class Tabs extends React.Component {
           );
     return (
       <ul className="tabs">
-        <li className={classNamePostTab} data-id="1" onClick={this.handleClick}><span>Add a Post</span></li>
-        <li className={classNameQuestionTab} data-id="2" onClick={this.handleClick}><span>Add a Question</span></li>
+        <li className={classNamePostTab}
+            data-id="1"
+            onClick={this.handleClick}><span>Add a Post</span></li>
+        <li className={classNameQuestionTab}
+            data-id="2"
+            onClick={this.handleClick}><span>Add a Question</span></li>
       </ul>
     );
   }

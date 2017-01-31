@@ -15,7 +15,8 @@ class Link extends React.Component {
     return (
       <li>
         {this.props.public && <p className="public">Public</p>}
-        <a href={this.props.href} target="_blank"><LinkIcon/>{this.props.title}</a>
+        <a href={this.props.href}
+           target="_blank"><LinkIcon/>{this.props.title}</a>
       </li>
     );
   }
