@@ -40,10 +40,12 @@ section.search {
     }
   }
 
-  .link-list {
+  .content-box {
     background-color: fade(#9b9b9b, 10%);
     margin-top: 5px;
+  }
 
+  .link-list {
     li {
       &:hover {
         background-color: #eceaec;
@@ -54,18 +56,18 @@ section.search {
       }
     }
 
-    .icon-link {
-      fill: #404040;
-      opacity: 0.3;
-
-      &:hover,
-      &:active {
-        opacity: 0.5;
-      }
-    }
-
     a {
       color: inherit;
+
+      .icon-link {
+        fill: #404040;
+        opacity: 0.3;
+
+        &:hover,
+        &:active {
+          opacity: 0.5;
+        }
+      }
     }
   }
 }

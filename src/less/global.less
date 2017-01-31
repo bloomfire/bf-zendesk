@@ -88,7 +88,7 @@ textarea {
   resize: none;
 }
 
-.link-list {
+.content-box {
   .border-radius(4px);
   padding: 11px 0;
   margin-bottom: 4px;
@@ -98,8 +98,10 @@ textarea {
     padding: 0 10px 0 6px;
 
     &:hover {
-      .icon-link {
-        visibility: visible;
+      a {
+        .icon-link {
+          visibility: visible;
+        }
       }
     }
   }
@@ -109,20 +111,20 @@ textarea {
     display: inline-block;
     vertical-align: middle;
     max-width: 100%;
+
+    .icon-link {
+      width: 11.5px;
+      height: 11.5px;
+      visibility: hidden;
+      margin-right: 5px;
+      cursor: pointer;
+      position: relative;
+      top: -1px;
+    }
   }
 
   .public ~ a {
     max-width: 263px;
-  }
-
-  .icon-link {
-    width: 11.5px;
-    height: 11.5px;
-    visibility: hidden;
-    margin-right: 5px;
-    cursor: pointer;
-    position: relative;
-    top: -1px;
   }
 
   .public {

@@ -1,26 +1,44 @@
 // linked resources section
 
 section.linked-resources {
+  .no-linked-resources {
+    text-align: center;
+    margin: -5px 0;
+  }
+
+  .message {
+    color: #317887;
+  }
+
   .instructions {
+    color: #737272;
+    font-size: 9px;
+    margin-top: -5px;
+
     .icon-link {
       width: 8.5px;
       height: 8.5px;
+      fill: #737272;
+      position: relative;
+      top: -1px;
     }
   }
 
-  .link-list {
+  .content-box {
     background-color: fade(#3fb8cd, 10%);
+  }
 
+  .link-list {
     li {
       &:hover {
         background-color: #d8eff5;
 
-        .icon-link {
-          fill: #429eb2;
-        }
-
         a {
           color: #429eb2;
+
+          .icon-link {
+            fill: #429eb2;
+          }
         }
       }
     }

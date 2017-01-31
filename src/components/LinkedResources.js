@@ -40,15 +40,22 @@ class LinkedResources extends React.Component {
       'section-collapsible',
       { collapsed: this.state.isCollapsed }
     );
+    let boxContents;
+    if (this.props.links.length > 0) {
+      boxContents = <LinkList links={this.props.links}/>;
+    } else {
+      boxContents = <div className="no-linked-resources">
+                      <p className="message">No linked resources.</p>
+                      <p className="instructions">Click <LinkIcon/> to add</p>
+                    </div>;
+    }
     return (
       <section className={classNameSection}>
         <h2>Linked Resources</h2>
         <CaretIcon handleClick={this.toggleCollapsed}/>
         <div className="section-content">
-          <div className="links-box">
-            <p className="message">No linked resources.</p>
-            <p className="instructions">Click <LinkIcon/> to add.</p>
-            <LinkList links={this.props.links}/>
+          <div className="content-box">
+            {boxContents}
           </div>
         </div>
       </section>

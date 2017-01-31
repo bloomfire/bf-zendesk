@@ -118,7 +118,11 @@ class Search extends React.Component {
         <div className="results">
           {!this.state.processing && <p className={classNameMessage}>{message}</p>}
           {(!this.state.processing && this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
-          <LinkList links={this.state.results}/>
+          {this.state.results.length > 0 &&
+            <div className="content-box">
+              <LinkList links={this.state.results}/>
+            </div>
+          }
         </div>
       </section>
     );
