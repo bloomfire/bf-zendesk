@@ -98,7 +98,10 @@ class Post extends React.Component {
           ),
           classNameSubmit = classNames({ processing: this.state.processing }),
           classNameTitle = classNames({ invalid: this.state.submitted && !this.state.titleIsValid }),
-          classNameBody = classNames({ invalid: this.state.submitted && !this.state.bodyIsValid }),
+          classNameBody = classNames(
+            'last-field',
+            { invalid: this.state.submitted && !this.state.bodyIsValid }
+          ),
           titlePlaceholder = this.state.submitted && !this.state.titleIsValid ? 'Title required' : 'Title',
           bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body';
     return (
@@ -115,8 +118,7 @@ class Post extends React.Component {
                value={this.state.descriptionValue}
                placeholder="Description (optional)"
                onChange={this.handleChange}/>
-        <textarea className="last-field"
-                  name="body"
+        <textarea name="body"
                   value={this.state.bodyValue}
                   placeholder={bodyPlaceholder}
                   className={classNameBody}

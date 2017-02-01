@@ -20,7 +20,7 @@ class Search extends React.Component {
     this.state = {
       value: '', // from search input
       results: [], // results from either initial search or user-initiated search
-      searched: false, // user-initiated search performed (not initial search)
+      searched: false, // a user-initiated search has been performed (not still the initial search)
       processing: false // search is currently running
     };
     // bindings
