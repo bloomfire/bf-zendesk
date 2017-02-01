@@ -6925,6 +6925,14 @@ exports.default = LinkList;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIdByEmail = exports.decodeLinkedResources = exports.encodeLinkedResources = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
+
+var _lodash = __webpack_require__(112);
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
 // standard options for .fetch() requests
 var fetchOpts = {
   credentials: 'include'
@@ -6970,12 +6978,38 @@ var decodeLinkedResources = function decodeLinkedResources(resourceTxt) {
   return resourceArr;
 };
 
+// given a Zendesk user's email
+var getBloomfireUserIdByEmail = function getBloomfireUserIdByEmail(email) {
+  return fetch('https://rooms.bloomfire.ws/api/v2/users?fields=email,id', fetchOpts).then(function (response) {
+    return response.json();
+  }).then(function (users) {
+    return _lodash2.default.result(_lodash2.default.find(users, function (user) {
+      return user.email === email;
+    }), 'id');
+  });
+};
+
+var getFormDataFromJSON = function getFormDataFromJSON(obj) {
+  var formData = new FormData();
+  Object.keys(obj).forEach(function (key) {
+    return formData.append(key, obj[key]);
+  });
+  return formData;
+};
+
+var capitalizeFirstLetter = function capitalizeFirstLetter(str) {
+  return '' + str.charAt(0).toUpperCase() + str.slice(1);
+};
+
 exports.fetchOpts = fetchOpts;
 exports.getResources = getResources;
 exports.getResourceURL = getResourceURL;
 exports.getResourceAPIURL = getResourceAPIURL;
 exports.encodeLinkedResources = encodeLinkedResources;
 exports.decodeLinkedResources = decodeLinkedResources;
+exports.getBloomfireUserIdByEmail = getBloomfireUserIdByEmail;
+exports.getFormDataFromJSON = getFormDataFromJSON;
+exports.capitalizeFirstLetter = capitalizeFirstLetter;
 
 /***/ }),
 /* 59 */
@@ -9950,7 +9984,8 @@ var AddContent = function (_React$Component) {
           { className: 'section-content' },
           _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab,
             initialTabId: this.initialTabId }),
-          _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1' }),
+          _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1',
+            client: this.props.client }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2' })
         )
       );
@@ -10217,6 +10252,12 @@ var _classnames = __webpack_require__(15);
 
 var _classnames2 = _interopRequireDefault(_classnames);
 
+var _lodash = __webpack_require__(112);
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
+var _utils = __webpack_require__(58);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
@@ -10237,12 +10278,14 @@ var Post = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Post.__proto__ || Object.getPrototypeOf(Post)).call(this, props));
 
     _this.state = {
-      title: '', // title input
-      description: '', // description input
-      body: '', // post body textarea
+      titleValue: '', // title input value
+      descriptionValue: '', // description input
+      bodyValue: '', // post body textarea
+      titleIsValid: false, // title input value is valid
+      bodyIsValid: false, // body input value is valid
       linkPost: true, // link checkbox
-      processing: false // post is currently being submitted
-    };
+      processing: false, // form is currently being submitted
+      submitted: false };
     // bindings
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
@@ -10250,6 +10293,42 @@ var Post = function (_React$Component) {
   }
 
   _createClass(Post, [{
+    key: 'validateForm',
+    value: function validateForm() {
+      var titleIsValid = _lodash2.default.trim(this.state.titleValue).length > 0,
+          bodyIsValid = _lodash2.default.trim(this.state.bodyValue).length > 0;
+      this.setState({
+        titleIsValid: titleIsValid,
+        bodyIsValid: bodyIsValid
+      });
+      return titleIsValid && bodyIsValid;
+    }
+  }, {
+    key: 'resetFormValues',
+    value: function resetFormValues() {
+      this.setState({
+        title: '',
+        description: '',
+        body: '',
+        linkPost: true
+      });
+    }
+  }, {
+    key: 'submitForm',
+    value: function submitForm(userId) {
+      return fetch('https://rooms.bloomfire.ws/api/v2/posts?session_token=884428610d4b6dccc1591ada914db00923821bab74d2549357c445f0f7c69362', _lodash2.default.merge({}, _utils.fetchOpts, {
+        method: 'POST',
+        body: (0, _utils.getFormDataFromJSON)({
+          author: userId,
+          title: this.state.titleValue,
+          description: this.state.descriptionValue,
+          post_body: this.state.bodyValue,
+          published: true,
+          public: false
+        })
+      }));
+    }
+  }, {
     key: 'handleChange',
     value: function handleChange(event) {
       var target = event.target,
@@ -10261,41 +10340,62 @@ var Post = function (_React$Component) {
   }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
+      var _this2 = this;
+
       event.preventDefault();
-      this.setState({ processing: true });
-      // this.getSearchResults(this.state.value)
-      //   .then(results => {
-      //     // console.log(results);
-      //     this.setState({
-      //       results,
-      //       processing: false
-      //     });
-      //   });
+      this.setState({ submitted: true });
+      if (this.validateForm()) {
+        this.setState({ processing: true });
+        this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
+        .then(function (data) {
+          return data['currentUser.email'];
+        }) // extract the returned property
+        .then(_utils.getBloomfireUserIdByEmail) // look up current user's email via Bloomfire API
+        .then(this.submitForm.bind(this)) // submit form data
+        .then(function (response) {
+          return response.json();
+        }) // extract JSON from response
+        .then(function (data) {
+          _this2.setState({ processing: false });
+          _this2.resetFormValues();
+          var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
+              postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
+              message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
+          _this2.props.client.invoke('notify', message, 'notice');
+        });
+      }
     }
   }, {
     key: 'render',
     value: function render() {
+      var _React$createElement;
+
       var classNameForm = (0, _classnames2.default)('post', { selected: this.props.isSelected }),
-          classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing });
+          classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing }),
+          classNameTitle = (0, _classnames2.default)({ invalid: this.state.submitted && !this.state.titleIsValid }),
+          classNameBody = (0, _classnames2.default)({ invalid: this.state.submitted && !this.state.bodyIsValid }),
+          titlePlaceholder = this.state.submitted && !this.state.titleIsValid ? 'Title required' : 'Title',
+          bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body';
       return _react2.default.createElement(
         'form',
         { className: classNameForm,
           onSubmit: this.handleSubmit },
         _react2.default.createElement('input', { type: 'text',
           name: 'title',
-          value: this.state.title,
-          placeholder: 'Title',
+          value: this.state.titleValue,
+          placeholder: titlePlaceholder,
+          className: classNameTitle,
           onChange: this.handleChange }),
         _react2.default.createElement('input', { type: 'text',
           name: 'description',
-          value: this.state.description,
+          value: this.state.descriptionValue,
           placeholder: 'Description (optional)',
           onChange: this.handleChange }),
-        _react2.default.createElement('textarea', { className: 'last-field',
+        _react2.default.createElement('textarea', (_React$createElement = { className: 'last-field',
           name: 'body',
-          value: this.state.body,
-          placeholder: 'Post body',
-          onChange: this.handleChange }),
+          value: this.state.bodyValue,
+          placeholder: bodyPlaceholder
+        }, _defineProperty(_React$createElement, 'className', classNameBody), _defineProperty(_React$createElement, 'onChange', this.handleChange), _React$createElement)),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },
@@ -10691,7 +10791,7 @@ exports = module.exports = __webpack_require__(97)();
 
 
 // module
-exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12.5px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput {\n  outline: none;\n}\ntextarea,\ninput[type=text] {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.content-box {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n}\n.content-box li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.content-box li:hover a .icon-link {\n  visibility: visible;\n}\n.content-box a {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  display: inline-block;\n  vertical-align: middle;\n  max-width: 100%;\n}\n.content-box a .icon-link {\n  width: 11.5px;\n  height: 11.5px;\n  visibility: hidden;\n  margin-right: 5px;\n  cursor: pointer;\n  position: relative;\n  top: -1px;\n}\n.content-box .public ~ a {\n  max-width: 263px;\n}\n.content-box .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n}\ninput[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12.5px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\ninput[type=submit]:hover {\n  background-color: #d0513c;\n}\ninput[type=submit]:active {\n  background-color: #b94835;\n}\ninput[type=submit].processing {\n  background-color: #47af3a;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search .message {\n  font-size: 12.5px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .content-box {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search .link-list li:hover {\n  background-color: #eceaec;\n}\nsection.search .link-list li:hover a {\n  font-weight: 600;\n}\nsection.search .link-list a {\n  color: inherit;\n}\nsection.search .link-list a .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n}\nsection.search .link-list a .icon-link:hover,\nsection.search .link-list a .icon-link:active {\n  opacity: 0.5;\n}\nsection.linked-resources .no-linked-resources {\n  text-align: center;\n  margin: -5px 0;\n}\nsection.linked-resources .message {\n  color: #317887;\n}\nsection.linked-resources .instructions {\n  color: #737272;\n  font-size: 9px;\n  margin-top: -5px;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 8.5px;\n  height: 8.5px;\n  fill: #737272;\n  position: relative;\n  top: -1px;\n}\nsection.linked-resources .content-box {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources .link-list li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources .link-list li:hover a {\n  color: #429eb2;\n}\nsection.linked-resources .link-list li:hover a .icon-link {\n  fill: #429eb2;\n}\nsection.linked-resources .link-list a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form:before,\nsection.add-content form:after {\n  content: ' ';\n  display: table;\n}\nsection.add-content form:after {\n  clear: both;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea {\n  margin-bottom: 11px;\n}\nsection.add-content input[type=text].last-field,\nsection.add-content textarea.last-field {\n  margin-bottom: 9px;\n}\nsection.add-content .link-to-ticket {\n  float: left;\n}\n", ""]);
+exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12.5px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput {\n  outline: none;\n}\ntextarea,\ninput[type=text] {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.content-box {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n}\n.content-box li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.content-box li:hover a .icon-link {\n  visibility: visible;\n}\n.content-box a {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  display: inline-block;\n  vertical-align: middle;\n  max-width: 100%;\n}\n.content-box a .icon-link {\n  width: 11.5px;\n  height: 11.5px;\n  visibility: hidden;\n  margin-right: 5px;\n  cursor: pointer;\n  position: relative;\n  top: -1px;\n}\n.content-box .public ~ a {\n  max-width: 263px;\n}\n.content-box .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n}\ninput[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12.5px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\ninput[type=submit]:hover {\n  background-color: #d0513c;\n}\ninput[type=submit]:active {\n  background-color: #b94835;\n}\ninput[type=submit].processing {\n  background-color: #47af3a;\n}\n.invalid {\n  border-color: #e85b43 !important;\n  background-color: rgba(232, 91, 67, 0.1) !important;\n}\n.invalid::-webkit-input-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid::-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-ms-input-placeholder {\n  color: #e85b43 !important;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search .message {\n  font-size: 12.5px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .content-box {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search .link-list li:hover {\n  background-color: #eceaec;\n}\nsection.search .link-list li:hover a {\n  font-weight: 600;\n}\nsection.search .link-list a {\n  color: inherit;\n}\nsection.search .link-list a .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n}\nsection.search .link-list a .icon-link:hover,\nsection.search .link-list a .icon-link:active {\n  opacity: 0.5;\n}\nsection.linked-resources .no-linked-resources {\n  text-align: center;\n  margin: -5px 0;\n}\nsection.linked-resources .message {\n  color: #317887;\n}\nsection.linked-resources .instructions {\n  color: #737272;\n  font-size: 9px;\n  margin-top: -5px;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 8.5px;\n  height: 8.5px;\n  fill: #737272;\n  position: relative;\n  top: -1px;\n}\nsection.linked-resources .content-box {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources .link-list li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources .link-list li:hover a {\n  color: #429eb2;\n}\nsection.linked-resources .link-list li:hover a .icon-link {\n  fill: #429eb2;\n}\nsection.linked-resources .link-list a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form:before,\nsection.add-content form:after {\n  content: ' ';\n  display: table;\n}\nsection.add-content form:after {\n  clear: both;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea {\n  margin-bottom: 11px;\n}\nsection.add-content input[type=text].last-field,\nsection.add-content textarea.last-field {\n  margin-bottom: 9px;\n}\nsection.add-content .link-to-ticket {\n  float: left;\n}\n", ""]);
 
 // exports
 

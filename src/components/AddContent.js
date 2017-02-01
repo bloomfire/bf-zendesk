@@ -53,7 +53,8 @@ class AddContent extends React.Component {
         <div className="section-content">
           <Tabs handleClick={this.switchTab}
                 initialTabId={this.initialTabId}/>
-          <Post isSelected={this.state.selectedTabId === '1'}/>
+          <Post isSelected={this.state.selectedTabId === '1'}
+                client={this.props.client}/>
           <Question isSelected={this.state.selectedTabId === '2'}/>
         </div>
       </section>

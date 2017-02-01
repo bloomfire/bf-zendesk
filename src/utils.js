@@ -1,3 +1,7 @@
+import _ from 'lodash';
+
+
+
 // standard options for .fetch() requests
 const fetchOpts = {
   credentials: 'include'
@@ -34,6 +38,25 @@ const decodeLinkedResources = function (resourceTxt) {
   return resourceArr;
 };
 
+// given a Zendesk user's email
+const getBloomfireUserIdByEmail = function (email) {
+  return fetch('https://rooms.bloomfire.ws/api/v2/users?fields=email,id', fetchOpts)
+           .then(response => response.json())
+           .then(users => {
+             return _.result(_.find(users, user => {
+               return user.email === email;
+             }), 'id');
+           });
+};
+
+const getFormDataFromJSON = function (obj) {
+  const formData = new FormData();
+  Object.keys(obj).forEach(key => formData.append(key, obj[key]));
+  return formData;
+};
+
+const capitalizeFirstLetter = (str) => `${str.charAt(0).toUpperCase()}${str.slice(1)}`;
+
 
 
 export {
@@ -42,5 +65,8 @@ export {
   getResourceURL,
   getResourceAPIURL,
   encodeLinkedResources,
-  decodeLinkedResources
+  decodeLinkedResources,
+  getBloomfireUserIdByEmail,
+  getFormDataFromJSON,
+  capitalizeFirstLetter
 };
