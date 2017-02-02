@@ -6973,7 +6973,7 @@ var decodeLinkedResource = function decodeLinkedResource(resourceTxt) {
   resourceTxt = resourceTxt.split('|');
   return {
     type: resourceTxt[0],
-    id: resourceTxt[1]
+    id: parseInt(resourceTxt[1], 10)
   };
 };
 
@@ -9764,6 +9764,8 @@ var _utils = __webpack_require__(58);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
+
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -9813,27 +9815,31 @@ var App = function (_React$Component) {
     }
 
     //
-    // TODO: add using API, not client SDK
     // TODO: also add to this.state.linkedResources
 
   }, {
     key: 'addLinkedResource',
-    value: function addLinkedResource(resourceObj) {
+    value: function addLinkedResource(resourceObj, title) {
       var _this3 = this;
 
-      this.getFromTicket('id', 'customField:custom_field_54394587').then(function (ticketData) {
-        console.log(1);
-        console.log(ticketData);
-        var resourceArr = (0, _utils.decodeLinkedResources)(ticketData['customField:custom_field_54394587']);
+      var ticketId = void 0;
+      this.getFromTicket('id').then(function (data) {
+        ticketId = data.id;
+        return _this3.client.request('/api/v2/tickets/' + ticketId + '.json');
+      }).then(function (data) {
+        var resourceTxt = _.result(_.find(data.ticket.custom_fields, function (field) {
+          return field.id === 54394587; // TODO: make dynamic
+        }), 'value');
+        var resourceArr = (0, _utils.decodeLinkedResources)(resourceTxt);
         resourceArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        console.log(4);
-        console.log(resourceArr);
-        _this3.client.request({
-          url: '/api/v2/tickets/' + ticketData.id + '.json',
+        return _this3.client.request({
+          url: '/api/v2/tickets/' + ticketId + '.json',
           type: 'PUT',
+          dataType: 'json',
+          contentType: 'application/json',
           data: JSON.stringify({
             ticket: {
               custom_fields: [{
@@ -9842,10 +9848,16 @@ var App = function (_React$Component) {
               }]
             }
           })
-        }).then(function (data) {
-          console.log(2);console.log(data);
         });
-        // this.client.set('ticket.customField:custom_field_54394587', encodeLinkedResources(resourceArr));
+      }).then(function (data) {
+        _this3.setState({
+          linkedResources: [].concat(_toConsumableArray(_this3.state.linkedResources), [{
+            key: resourceObj.id,
+            href: 'https://rooms.bloomfire.ws/' + resourceObj.type + 's/' + resourceObj.id,
+            title: title,
+            public: false
+          }])
+        });
       });
     }
   }, {
@@ -9867,14 +9879,14 @@ var App = function (_React$Component) {
       paths = paths.map(function (path) {
         return 'ticket.' + path;
       });
-      console.log(paths);
       return this.client.get(paths).then(function (data) {
-        console.log(data);
         var obj = {};
         for (var key in data) {
-          obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+          if (key !== 'errors') {
+            // discard errors object
+            obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+          }
         }
-        console.log(obj);
         return obj;
       });
     }
@@ -10442,7 +10454,7 @@ var Post = function (_React$Component) {
             _this2.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
-            });
+            }, _this2.state.title);
           }
           _this2.setState({ processing: false });
           _this2.resetFormValues();

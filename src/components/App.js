@@ -46,23 +46,28 @@ class App extends React.Component {
   }
 
   //
-  // TODO: add using API, not client SDK
   // TODO: also add to this.state.linkedResources
-  addLinkedResource(resourceObj) {
-    this.getFromTicket('id', 'customField:custom_field_54394587')
-      .then(ticketData => {
-        console.log(1);
-        console.log(ticketData);
-        let resourceArr = decodeLinkedResources(ticketData['customField:custom_field_54394587']);
+  addLinkedResource(resourceObj, title) {
+    let ticketId;
+    this.getFromTicket('id')
+      .then(data => {
+        ticketId = data.id;
+        return this.client.request(`/api/v2/tickets/${ticketId}.json`);
+      })
+      .then(data => {
+        const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
+          return field.id === 54394587; // TODO: make dynamic
+        }), 'value');
+        let resourceArr = decodeLinkedResources(resourceTxt);
         resourceArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        console.log(4);
-        console.log(resourceArr);
-        this.client.request({
-          url: `/api/v2/tickets/${ticketData.id}.json`,
+        return this.client.request({
+          url: `/api/v2/tickets/${ticketId}.json`,
           type: 'PUT',
+          dataType: 'json',
+          contentType: 'application/json',
           data: JSON.stringify({
             ticket: {
               custom_fields: [
@@ -73,8 +78,16 @@ class App extends React.Component {
               ]
             }
           })
-        }).then(data => { console.log(2); console.log(data); });
-        // this.client.set('ticket.customField:custom_field_54394587', encodeLinkedResources(resourceArr));
+        });
+      }).then(data => {
+        this.setState({
+          linkedResources: [...this.state.linkedResources, {
+            key: resourceObj.id,
+            href: `https://rooms.bloomfire.ws/${resourceObj.type}s/${resourceObj.id}`,
+            title,
+            public: false
+          }]
+        });
       });
   };
 
@@ -86,15 +99,14 @@ class App extends React.Component {
   // convenience wrapper to this.client.get()
   getFromTicket(...paths) {
     paths = paths.map(path => `ticket.${path}`);
-    console.log(paths);
     return this.client.get(paths)
       .then(data => {
-        console.log(data);
         let obj = {};
         for (let key in data) {
-          obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+          if (key !== 'errors') { // discard errors object
+            obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+          }
         }
-        console.log(obj);
         return obj;
       });
   }

@@ -85,7 +85,7 @@ class Post extends React.Component {
             this.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
-            });
+            }, this.state.title);
           }
           this.setState({ processing: false });
           this.resetFormValues();

@@ -31,7 +31,7 @@ const decodeLinkedResource = function (resourceTxt) {
   resourceTxt = resourceTxt.split('|');
   return {
     type: resourceTxt[0],
-    id: resourceTxt[1]
+    id: parseInt(resourceTxt[1], 10)
   };
 };
 
