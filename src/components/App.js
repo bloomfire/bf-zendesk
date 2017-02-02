@@ -27,22 +27,82 @@ class App extends React.Component {
     };
     // bindings
     this.resize = this.resize.bind(this);
+    this.addLinkedResource = this.addLinkedResource.bind(this);
   }
 
   componentDidMount() {
     this.node = ReactDOM.findDOMNode(this);
     this.lastHeight = this.node.clientHeight;
-    this.getLinkedResources();
+    this.populateLinkedResources();
   }
 
-  getLinkedResources() {
-    this.client.get('ticket.customField:custom_field_54394587').then(data => { // TODO: how to get custom field ID dynamically?
-      const resourceArr = decodeLinkedResources(data['ticket.customField:custom_field_54394587']),
-            linkedResourceAPIURLs = resourceArr.map(resource => getResourceAPIURL(resource.type, resource.id));
-      getResources(linkedResourceAPIURLs).then(linkedResources => {
+  populateLinkedResources() {
+    this.getLinkedResourcesFromTicket()
+      .then(resourceArr => resourceArr.map(getResourceAPIURL))
+      .then(getResources)
+      .then(linkedResources => {
         this.setState({ linkedResources });
       });
-    });
+  }
+
+  //
+  // TODO: add using API, not client SDK
+  // TODO: also add to this.state.linkedResources
+  addLinkedResource(resourceObj) {
+    this.getFromTicket('id', 'customField:custom_field_54394587')
+      .then(ticketData => {
+        console.log(1);
+        console.log(ticketData);
+        let resourceArr = decodeLinkedResources(ticketData['customField:custom_field_54394587']);
+        resourceArr.push({
+          type: resourceObj.type,
+          id: resourceObj.id
+        });
+        console.log(4);
+        console.log(resourceArr);
+        this.client.request({
+          url: `/api/v2/tickets/${ticketData.id}.json`,
+          type: 'PUT',
+          data: JSON.stringify({
+            ticket: {
+              custom_fields: [
+                {
+                  id: 54394587, // TODO: make dynamic
+                  value: encodeLinkedResources(resourceArr)
+                }
+              ]
+            }
+          })
+        }).then(data => { console.log(2); console.log(data); });
+        // this.client.set('ticket.customField:custom_field_54394587', encodeLinkedResources(resourceArr));
+      });
+  };
+
+  //
+  removeLinkedResource(resourceObj) {
+
+  };
+
+  // convenience wrapper to this.client.get()
+  getFromTicket(...paths) {
+    paths = paths.map(path => `ticket.${path}`);
+    console.log(paths);
+    return this.client.get(paths)
+      .then(data => {
+        console.log(data);
+        let obj = {};
+        for (let key in data) {
+          obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+        }
+        console.log(obj);
+        return obj;
+      });
+  }
+
+  // TODO: replace call(s) to this with .getFromTicket('customField:custom_field_54394587')
+  getLinkedResourcesFromTicket() {
+    return this.client.get('ticket.customField:custom_field_54394587') // TODO: how to get custom field ID dynamically?
+             .then(data => decodeLinkedResources(data['ticket.customField:custom_field_54394587']));
   }
 
   resize() {
@@ -70,7 +130,8 @@ class App extends React.Component {
                          resize={this.resize}
                          links={this.state.linkedResources}/>
         <AddContent client={this.client}
-                    resize={this.resize}/>
+                    resize={this.resize}
+                    addLinkedResource={this.addLinkedResource}/>
       </main>
     );
   }

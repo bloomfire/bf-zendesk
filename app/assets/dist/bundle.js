@@ -6925,7 +6925,7 @@ exports.default = LinkList;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIdByEmail = exports.decodeLinkedResources = exports.encodeLinkedResources = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
+exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIdByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
 
 var _lodash = __webpack_require__(112);
 
@@ -6954,28 +6954,32 @@ var getResourceURL = function getResourceURL(type, id) {
 };
 
 // given a Bloomfire linked resource type and ID, return the API URL for the resource
-var getResourceAPIURL = function getResourceAPIURL(type, id) {
-  return 'https://rooms.bloomfire.ws/api/v2/' + type + 's/' + id;
+var getResourceAPIURL = function getResourceAPIURL(resourceObj) {
+  return 'https://rooms.bloomfire.ws/api/v2/' + resourceObj.type + 's/' + resourceObj.id;
+};
+
+// given a Bloomfire linked resource object, return a text representation
+var encodeLinkedResource = function encodeLinkedResource(resourceObj) {
+  return resourceObj.type + '|' + resourceObj.id;
 };
 
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
 var encodeLinkedResources = function encodeLinkedResources(resourceArr) {
-  var resourceTxt = resourceArr.map(function (resource) {
-    return resource.type + '|' + resource.id;
-  }).join('\r\n');
-  return resourceTxt;
+  return resourceArr.map(encodeLinkedResource).join('\r\n');
+};
+
+// given a text string of a Bloomfire linked resource, return a linked resource object
+var decodeLinkedResource = function decodeLinkedResource(resourceTxt) {
+  resourceTxt = resourceTxt.split('|');
+  return {
+    type: resourceTxt[0],
+    id: resourceTxt[1]
+  };
 };
 
 // given a text string containing Bloomfire linked resources, return an array of linked resource objects
-var decodeLinkedResources = function decodeLinkedResources(resourceTxt) {
-  var resourceArr = resourceTxt.split(/\r?\n/g).map(function (resource) {
-    resource = resource.split('|');
-    return {
-      type: resource[0],
-      id: resource[1]
-    };
-  });
-  return resourceArr;
+var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
+  return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
 };
 
 // given a Zendesk user's email
@@ -7005,7 +7009,9 @@ exports.fetchOpts = fetchOpts;
 exports.getResources = getResources;
 exports.getResourceURL = getResourceURL;
 exports.getResourceAPIURL = getResourceAPIURL;
+exports.encodeLinkedResource = encodeLinkedResource;
 exports.encodeLinkedResources = encodeLinkedResources;
+exports.decodeLinkedResource = decodeLinkedResource;
 exports.decodeLinkedResources = decodeLinkedResources;
 exports.getBloomfireUserIdByEmail = getBloomfireUserIdByEmail;
 exports.getFormDataFromJSON = getFormDataFromJSON;
@@ -9783,6 +9789,7 @@ var App = function (_React$Component) {
     };
     // bindings
     _this.resize = _this.resize.bind(_this);
+    _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     return _this;
   }
 
@@ -9791,22 +9798,95 @@ var App = function (_React$Component) {
     value: function componentDidMount() {
       this.node = _reactDom2.default.findDOMNode(this);
       this.lastHeight = this.node.clientHeight;
-      this.getLinkedResources();
+      this.populateLinkedResources();
     }
   }, {
-    key: 'getLinkedResources',
-    value: function getLinkedResources() {
+    key: 'populateLinkedResources',
+    value: function populateLinkedResources() {
       var _this2 = this;
 
-      this.client.get('ticket.customField:custom_field_54394587').then(function (data) {
-        // TODO: how to get custom field ID dynamically?
-        var resourceArr = (0, _utils.decodeLinkedResources)(data['ticket.customField:custom_field_54394587']),
-            linkedResourceAPIURLs = resourceArr.map(function (resource) {
-          return (0, _utils.getResourceAPIURL)(resource.type, resource.id);
+      this.getLinkedResourcesFromTicket().then(function (resourceArr) {
+        return resourceArr.map(_utils.getResourceAPIURL);
+      }).then(_utils.getResources).then(function (linkedResources) {
+        _this2.setState({ linkedResources: linkedResources });
+      });
+    }
+
+    //
+    // TODO: add using API, not client SDK
+    // TODO: also add to this.state.linkedResources
+
+  }, {
+    key: 'addLinkedResource',
+    value: function addLinkedResource(resourceObj) {
+      var _this3 = this;
+
+      this.getFromTicket('id', 'customField:custom_field_54394587').then(function (ticketData) {
+        console.log(1);
+        console.log(ticketData);
+        var resourceArr = (0, _utils.decodeLinkedResources)(ticketData['customField:custom_field_54394587']);
+        resourceArr.push({
+          type: resourceObj.type,
+          id: resourceObj.id
         });
-        (0, _utils.getResources)(linkedResourceAPIURLs).then(function (linkedResources) {
-          _this2.setState({ linkedResources: linkedResources });
+        console.log(4);
+        console.log(resourceArr);
+        _this3.client.request({
+          url: '/api/v2/tickets/' + ticketData.id + '.json',
+          type: 'PUT',
+          data: JSON.stringify({
+            ticket: {
+              custom_fields: [{
+                id: 54394587, // TODO: make dynamic
+                value: (0, _utils.encodeLinkedResources)(resourceArr)
+              }]
+            }
+          })
+        }).then(function (data) {
+          console.log(2);console.log(data);
         });
+        // this.client.set('ticket.customField:custom_field_54394587', encodeLinkedResources(resourceArr));
+      });
+    }
+  }, {
+    key: 'removeLinkedResource',
+
+
+    //
+    value: function removeLinkedResource(resourceObj) {}
+  }, {
+    key: 'getFromTicket',
+
+
+    // convenience wrapper to this.client.get()
+    value: function getFromTicket() {
+      for (var _len = arguments.length, paths = Array(_len), _key = 0; _key < _len; _key++) {
+        paths[_key] = arguments[_key];
+      }
+
+      paths = paths.map(function (path) {
+        return 'ticket.' + path;
+      });
+      console.log(paths);
+      return this.client.get(paths).then(function (data) {
+        console.log(data);
+        var obj = {};
+        for (var key in data) {
+          obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+        }
+        console.log(obj);
+        return obj;
+      });
+    }
+
+    // TODO: replace call(s) to this with .getFromTicket('customField:custom_field_54394587')
+
+  }, {
+    key: 'getLinkedResourcesFromTicket',
+    value: function getLinkedResourcesFromTicket() {
+      return this.client.get('ticket.customField:custom_field_54394587') // TODO: how to get custom field ID dynamically?
+      .then(function (data) {
+        return (0, _utils.decodeLinkedResources)(data['ticket.customField:custom_field_54394587']);
       });
     }
   }, {
@@ -9840,7 +9920,8 @@ var App = function (_React$Component) {
           resize: this.resize,
           links: this.state.linkedResources }),
         _react2.default.createElement(_AddContent2.default, { client: this.client,
-          resize: this.resize })
+          resize: this.resize,
+          addLinkedResource: this.addLinkedResource })
       );
     }
   }]);
@@ -9985,7 +10066,8 @@ var AddContent = function (_React$Component) {
           _react2.default.createElement(_Tabs2.default, { handleClick: this.switchTab,
             initialTabId: this.initialTabId }),
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1',
-            client: this.props.client }),
+            client: this.props.client,
+            addLinkedResource: this.props.addLinkedResource }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2' })
         )
       );
@@ -10278,9 +10360,9 @@ var Post = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (Post.__proto__ || Object.getPrototypeOf(Post)).call(this, props));
 
     _this.state = {
-      titleValue: '', // title input value
-      descriptionValue: '', // description input
-      bodyValue: '', // post body textarea
+      title: '', // title input value
+      description: '', // description input
+      body: '', // post body textarea
       titleIsValid: false, // title input value is valid
       bodyIsValid: false, // body input value is valid
       linkPost: true, // link checkbox
@@ -10295,8 +10377,8 @@ var Post = function (_React$Component) {
   _createClass(Post, [{
     key: 'validateForm',
     value: function validateForm() {
-      var titleIsValid = _lodash2.default.trim(this.state.titleValue).length > 0,
-          bodyIsValid = _lodash2.default.trim(this.state.bodyValue).length > 0;
+      var titleIsValid = _lodash2.default.trim(this.state.title).length > 0,
+          bodyIsValid = _lodash2.default.trim(this.state.body).length > 0;
       this.setState({
         titleIsValid: titleIsValid,
         bodyIsValid: bodyIsValid
@@ -10316,13 +10398,13 @@ var Post = function (_React$Component) {
   }, {
     key: 'submitForm',
     value: function submitForm(userId) {
-      return fetch('https://rooms.bloomfire.ws/api/v2/posts?session_token=884428610d4b6dccc1591ada914db00923821bab74d2549357c445f0f7c69362', _lodash2.default.merge({}, _utils.fetchOpts, {
+      return fetch('https://rooms.bloomfire.ws/api/v2/posts', _lodash2.default.merge({}, _utils.fetchOpts, {
         method: 'POST',
         body: (0, _utils.getFormDataFromJSON)({
           author: userId,
-          title: this.state.titleValue,
-          description: this.state.descriptionValue,
-          post_body: this.state.bodyValue,
+          title: this.state.title,
+          description: this.state.description,
+          post_body: this.state.body,
           published: true,
           public: false
         })
@@ -10356,6 +10438,12 @@ var Post = function (_React$Component) {
           return response.json();
         }) // extract JSON from response
         .then(function (data) {
+          if (_this2.state.linkPost) {
+            _this2.props.addLinkedResource({
+              id: data.id,
+              type: data.contribution_type
+            });
+          }
           _this2.setState({ processing: false });
           _this2.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
@@ -10380,17 +10468,17 @@ var Post = function (_React$Component) {
           onSubmit: this.handleSubmit },
         _react2.default.createElement('input', { type: 'text',
           name: 'title',
-          value: this.state.titleValue,
+          value: this.state.title,
           placeholder: titlePlaceholder,
           className: classNameTitle,
           onChange: this.handleChange }),
         _react2.default.createElement('input', { type: 'text',
           name: 'description',
-          value: this.state.descriptionValue,
+          value: this.state.description,
           placeholder: 'Description (optional)',
           onChange: this.handleChange }),
         _react2.default.createElement('textarea', { name: 'body',
-          value: this.state.bodyValue,
+          value: this.state.body,
           placeholder: bodyPlaceholder,
           className: classNameBody,
           onChange: this.handleChange }),
@@ -10669,7 +10757,7 @@ var Search = function (_React$Component) {
             { className: classNameMessage },
             message
           ),
-          !this.state.processing && this.state.searched && !resultsExist && _react2.default.createElement(
+          !this.state.processing && !this.state.searched && !resultsExist && _react2.default.createElement(
             'p',
             { className: 'sub-message' },
             'Try searching your community.'

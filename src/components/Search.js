@@ -123,7 +123,7 @@ class Search extends React.Component {
         </form>
         <div className="results">
           {!this.state.processing && <p className={classNameMessage}>{message}</p>}
-          {(!this.state.processing && this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
+          {(!this.state.processing && !this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
           {this.state.results.length > 0 &&
             <div className="content-box">
               <LinkList links={this.state.results}/>

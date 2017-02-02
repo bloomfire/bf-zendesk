@@ -18,25 +18,25 @@ const getResources = function (resourceURLs) {
 const getResourceURL = (type, id) => `https://rooms.bloomfire.ws/${type}s/${id}`;
 
 // given a Bloomfire linked resource type and ID, return the API URL for the resource
-const getResourceAPIURL = (type, id) => `https://rooms.bloomfire.ws/api/v2/${type}s/${id}`;
+const getResourceAPIURL = resourceObj => `https://rooms.bloomfire.ws/api/v2/${resourceObj.type}s/${resourceObj.id}`;
+
+// given a Bloomfire linked resource object, return a text representation
+const encodeLinkedResource = resourceObj => `${resourceObj.type}|${resourceObj.id}`;
 
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
-const encodeLinkedResources = function (resourceArr) {
-  const resourceTxt = resourceArr.map(resource => `${resource.type}|${resource.id}`).join('\r\n');
-  return resourceTxt;
+const encodeLinkedResources = resourceArr => resourceArr.map(encodeLinkedResource).join('\r\n');
+
+// given a text string of a Bloomfire linked resource, return a linked resource object
+const decodeLinkedResource = function (resourceTxt) {
+  resourceTxt = resourceTxt.split('|');
+  return {
+    type: resourceTxt[0],
+    id: resourceTxt[1]
+  };
 };
 
 // given a text string containing Bloomfire linked resources, return an array of linked resource objects
-const decodeLinkedResources = function (resourceTxt) {
-  const resourceArr = resourceTxt.split(/\r?\n/g).map(resource => {
-    resource = resource.split('|');
-    return {
-      type: resource[0],
-      id: resource[1]
-    };
-  });
-  return resourceArr;
-};
+const decodeLinkedResources = resourcesTxt => resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
 
 // given a Zendesk user's email
 const getBloomfireUserIdByEmail = function (email) {
@@ -64,7 +64,9 @@ export {
   getResources,
   getResourceURL,
   getResourceAPIURL,
+  encodeLinkedResource,
   encodeLinkedResources,
+  decodeLinkedResource,
   decodeLinkedResources,
   getBloomfireUserIdByEmail,
   getFormDataFromJSON,
