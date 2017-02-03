@@ -9852,8 +9852,8 @@ var App = function (_React$Component) {
       }).then(function (data) {
         _this3.setState({
           linkedResources: [].concat(_toConsumableArray(_this3.state.linkedResources), [{
-            key: resourceObj.id,
-            href: 'https://rooms.bloomfire.ws/' + resourceObj.type + 's/' + resourceObj.id,
+            id: resourceObj.id,
+            contribution_type: resourceObj.type,
             title: title,
             public: false
           }])
@@ -10387,15 +10387,23 @@ var Post = function (_React$Component) {
   }
 
   _createClass(Post, [{
+    key: 'validateTitle',
+    value: function validateTitle() {
+      var titleIsValid = _lodash2.default.trim(this.state.title).length > 0;
+      this.setState({ titleIsValid: titleIsValid });
+      return titleIsValid;
+    }
+  }, {
+    key: 'validateBody',
+    value: function validateBody() {
+      var bodyIsValid = _lodash2.default.trim(this.state.body).length > 0;
+      this.setState({ bodyIsValid: bodyIsValid });
+      return bodyIsValid;
+    }
+  }, {
     key: 'validateForm',
     value: function validateForm() {
-      var titleIsValid = _lodash2.default.trim(this.state.title).length > 0,
-          bodyIsValid = _lodash2.default.trim(this.state.body).length > 0;
-      this.setState({
-        titleIsValid: titleIsValid,
-        bodyIsValid: bodyIsValid
-      });
-      return titleIsValid && bodyIsValid;
+      return this.validateTitle() && this.validateBody();
     }
   }, {
     key: 'resetFormValues',
@@ -10425,16 +10433,26 @@ var Post = function (_React$Component) {
   }, {
     key: 'handleChange',
     value: function handleChange(event) {
+      var _this2 = this;
+
       var target = event.target,
           // shortcut
       value = target.type === 'checkbox' ? target.checked : target.value,
           name = target.name;
-      this.setState(_defineProperty({}, name, value));
+      this.setState(_defineProperty({}, name, value), function () {
+        if (_this2.state.submitted) {
+          if (name === 'title') {
+            _this2.validateTitle();
+          } else if (name === 'body') {
+            _this2.validateBody();
+          }
+        }
+      });
     }
   }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this2 = this;
+      var _this3 = this;
 
       event.preventDefault();
       this.setState({ submitted: true });
@@ -10450,18 +10468,18 @@ var Post = function (_React$Component) {
           return response.json();
         }) // extract JSON from response
         .then(function (data) {
-          if (_this2.state.linkPost) {
-            _this2.props.addLinkedResource({
+          if (_this3.state.linkPost) {
+            _this3.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
-            }, _this2.state.title);
+            }, _this3.state.title);
           }
-          _this2.setState({ processing: false });
-          _this2.resetFormValues();
+          _this3.setState({ processing: false });
+          _this3.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
               message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
-          _this2.props.client.invoke('notify', message, 'notice');
+          _this3.props.client.invoke('notify', message, 'notice');
         });
       }
     }

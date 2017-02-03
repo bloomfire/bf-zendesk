@@ -82,8 +82,8 @@ class App extends React.Component {
       }).then(data => {
         this.setState({
           linkedResources: [...this.state.linkedResources, {
-            key: resourceObj.id,
-            href: `https://rooms.bloomfire.ws/${resourceObj.type}s/${resourceObj.id}`,
+            id: resourceObj.id,
+            contribution_type: resourceObj.type,
             title,
             public: false
           }]

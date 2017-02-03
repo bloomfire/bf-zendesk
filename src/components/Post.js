@@ -30,14 +30,20 @@ class Post extends React.Component {
     this.handleSubmit = this.handleSubmit.bind(this);
   }
 
+  validateTitle() {
+    const titleIsValid = _.trim(this.state.title).length > 0;
+    this.setState({ titleIsValid });
+    return titleIsValid;
+  }
+
+  validateBody() {
+    const bodyIsValid = _.trim(this.state.body).length > 0;
+    this.setState({ bodyIsValid });
+    return bodyIsValid;
+  }
+
   validateForm() {
-    const titleIsValid = _.trim(this.state.title).length > 0,
-          bodyIsValid = _.trim(this.state.body).length > 0;
-    this.setState({
-      titleIsValid,
-      bodyIsValid,
-    });
-    return titleIsValid && bodyIsValid;
+    return this.validateTitle() && this.validateBody();
   }
 
   resetFormValues() {
@@ -67,7 +73,15 @@ class Post extends React.Component {
     const target = event.target, // shortcut
           value = target.type === 'checkbox' ? target.checked : target.value,
           name = target.name;
-    this.setState({ [name]: value });
+    this.setState({ [name]: value }, () => {
+      if (this.state.submitted) {
+        if (name === 'title') {
+          this.validateTitle();
+        } else if (name === 'body') {
+          this.validateBody();
+        }
+      }
+    });
   }
 
   handleSubmit(event) {
