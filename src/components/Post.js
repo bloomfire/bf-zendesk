@@ -23,7 +23,7 @@ class Post extends React.Component {
       bodyIsValid: false, // body input value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
-      submitted: false, // form has ever been submitted
+      submitted: false, // user has attempted to submit the form
       published: false // form was successfully submitted
     };
     // bindings
@@ -52,6 +52,8 @@ class Post extends React.Component {
       title: '',
       description: '',
       body: '',
+      titleIsValid: false,
+      bodyIsValid: false,
       linkToTicket: true
     });
   }
@@ -85,6 +87,12 @@ class Post extends React.Component {
     });
   }
 
+  hidePublished() {
+    setTimeout(() => {
+      this.setState({ published: false });
+    }, 2000);
+  }
+
   handleSubmit(event) {
     event.preventDefault();
     this.setState({ submitted: true });
@@ -104,12 +112,9 @@ class Post extends React.Component {
           }
           this.setState({
             processing: false,
-            published: true
-          }, () => {
-            setTimeout(() => {
-              this.setState({ published: false });
-            }, 2000);
-          });
+            published: true,
+            submitted: false
+          }, this.hidePublished.bind(this));
           this.resetFormValues();
           const resource = capitalizeFirstLetter(data.contribution_type),
                 postURL = `https://rooms.bloomfire.ws/${data.contribution_type}s/${data.id}`,
@@ -162,6 +167,7 @@ class Post extends React.Component {
         </p>
         <input type="submit"
                value={buttonLabel}
+               disabled={this.state.processing || this.state.published}
                className={classNameSubmit}/>
       </form>
     );

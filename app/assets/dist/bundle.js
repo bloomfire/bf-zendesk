@@ -27517,7 +27517,7 @@ var Post = function (_React$Component) {
       bodyIsValid: false, // body input value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
-      submitted: false, // form has ever been submitted
+      submitted: false, // user has attempted to submit the form
       published: false // form was successfully submitted
     };
     // bindings
@@ -27552,6 +27552,8 @@ var Post = function (_React$Component) {
         title: '',
         description: '',
         body: '',
+        titleIsValid: false,
+        bodyIsValid: false,
         linkToTicket: true
       });
     }
@@ -27590,9 +27592,18 @@ var Post = function (_React$Component) {
       });
     }
   }, {
+    key: 'hidePublished',
+    value: function hidePublished() {
+      var _this3 = this;
+
+      setTimeout(function () {
+        _this3.setState({ published: false });
+      }, 2000);
+    }
+  }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this3 = this;
+      var _this4 = this;
 
       event.preventDefault();
       this.setState({ submitted: true });
@@ -27608,25 +27619,22 @@ var Post = function (_React$Component) {
           return response.json();
         }) // extract JSON from response
         .then(function (data) {
-          if (_this3.state.linkToTicket) {
-            _this3.props.addLinkedResource({
+          if (_this4.state.linkToTicket) {
+            _this4.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
-            }, _this3.state.title);
+            }, _this4.state.title);
           }
-          _this3.setState({
+          _this4.setState({
             processing: false,
-            published: true
-          }, function () {
-            setTimeout(function () {
-              _this3.setState({ published: false });
-            }, 2000);
-          });
-          _this3.resetFormValues();
+            published: true,
+            submitted: false
+          }, _this4.hidePublished.bind(_this4));
+          _this4.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
               message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
-          _this3.props.client.invoke('notify', message, 'notice');
+          _this4.props.client.invoke('notify', message, 'notice');
         });
       }
     }
@@ -27676,6 +27684,7 @@ var Post = function (_React$Component) {
         ),
         _react2.default.createElement('input', { type: 'submit',
           value: buttonLabel,
+          disabled: this.state.processing || this.state.published,
           className: classNameSubmit })
       );
     }
@@ -27739,7 +27748,7 @@ var Question = function (_React$Component) {
       questionIsValid: false, // question textarea value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
-      submitted: false, // form has ever been submitted
+      submitted: false, // user has attempted to submit the form
       published: false // form was successfully submitted
     };
     // bindings
@@ -27766,7 +27775,8 @@ var Question = function (_React$Component) {
       this.setState({
         question: '',
         explanation: '',
-        answerers: '',
+        answerers: [],
+        questionIsValid: false,
         linkToTicket: true
       });
     }
@@ -27816,9 +27826,18 @@ var Question = function (_React$Component) {
       });
     }
   }, {
+    key: 'hidePublished',
+    value: function hidePublished() {
+      var _this3 = this;
+
+      setTimeout(function () {
+        _this3.setState({ published: false });
+      }, 2000);
+    }
+  }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this3 = this;
+      var _this4 = this;
 
       event.preventDefault();
       this.setState({ submitted: true });
@@ -27835,33 +27854,30 @@ var Question = function (_React$Component) {
         }) // extract JSON from response
         .then(function (data) {
           // submit answerers, if needed, or just return response data again immediately
-          if (_this3.state.answerers.length > 0) {
-            return _this3.submitAnswerers(data.id).then(function (response) {
+          if (_this4.state.answerers.length > 0) {
+            return _this4.submitAnswerers(data.id).then(function (response) {
               return response.json();
             });
           } else {
             return data;
           }
         }).then(function (data) {
-          if (_this3.state.linkToTicket) {
-            _this3.props.addLinkedResource({
+          if (_this4.state.linkToTicket) {
+            _this4.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
-            }, _this3.state.question);
+            }, _this4.state.question);
           }
-          _this3.setState({
+          _this4.setState({
             processing: false,
-            published: true
-          }, function () {
-            setTimeout(function () {
-              _this3.setState({ published: false });
-            }, 2000);
-          });
-          _this3.resetFormValues();
+            published: true,
+            submitted: false
+          }, _this4.hidePublished.bind(_this4));
+          _this4.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
               message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
-          _this3.props.client.invoke('notify', message, 'notice');
+          _this4.props.client.invoke('notify', message, 'notice');
         });
       }
     }
@@ -27909,6 +27925,7 @@ var Question = function (_React$Component) {
         ),
         _react2.default.createElement('input', { type: 'submit',
           value: buttonLabel,
+          disabled: this.state.processing || this.state.published,
           className: classNameSubmit })
       );
     }
