@@ -56,7 +56,9 @@ class AddContent extends React.Component {
           <Post isSelected={this.state.selectedTabId === '1'}
                 client={this.props.client}
                 addLinkedResource={this.props.addLinkedResource}/>
-          <Question isSelected={this.state.selectedTabId === '2'}/>
+          <Question isSelected={this.state.selectedTabId === '2'}
+                    client={this.props.client}
+                    addLinkedResource={this.props.addLinkedResource}/>
         </div>
       </section>
     );

@@ -26888,7 +26888,7 @@ var App = function (_React$Component) {
     // bindings
     _this.resize = _this.resize.bind(_this);
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
-    console.log(123);
+    console.log(1);
     return _this;
   }
 
@@ -27177,7 +27177,9 @@ var AddContent = function (_React$Component) {
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabId === '1',
             client: this.props.client,
             addLinkedResource: this.props.addLinkedResource }),
-          _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2' })
+          _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabId === '2',
+            client: this.props.client,
+            addLinkedResource: this.props.addLinkedResource })
         )
       );
     }
@@ -27480,11 +27482,11 @@ var Post = function (_React$Component) {
 
     _this.state = {
       title: '', // title input value
-      description: '', // description input
-      body: '', // post body textarea
+      description: '', // description input value
+      body: '', // post body textarea value
       titleIsValid: false, // title input value is valid
       bodyIsValid: false, // body input value is valid
-      linkPost: true, // link checkbox
+      linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
       submitted: false };
     // bindings
@@ -27519,7 +27521,7 @@ var Post = function (_React$Component) {
         title: '',
         description: '',
         body: '',
-        linkPost: true
+        linkToTicket: true
       });
     }
   }, {
@@ -27575,7 +27577,7 @@ var Post = function (_React$Component) {
           return response.json();
         }) // extract JSON from response
         .then(function (data) {
-          if (_this3.state.linkPost) {
+          if (_this3.state.linkToTicket) {
             _this3.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
@@ -27594,9 +27596,9 @@ var Post = function (_React$Component) {
     key: 'render',
     value: function render() {
       var classNameForm = (0, _classnames2.default)('post', { selected: this.props.isSelected }),
-          classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing }),
           classNameTitle = (0, _classnames2.default)({ invalid: this.state.submitted && !this.state.titleIsValid }),
           classNameBody = (0, _classnames2.default)('last-field', { invalid: this.state.submitted && !this.state.bodyIsValid }),
+          classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing }),
           titlePlaceholder = this.state.submitted && !this.state.titleIsValid ? 'Title required' : 'Title',
           bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body';
       return _react2.default.createElement(
@@ -27624,8 +27626,8 @@ var Post = function (_React$Component) {
           { className: 'link-to-ticket' },
           _react2.default.createElement('input', { type: 'checkbox',
             id: 'link-post',
-            name: 'linkPost',
-            checked: this.state.linkPost,
+            name: 'linkToTicket',
+            checked: this.state.linkToTicket,
             onChange: this.handleChange }),
           _react2.default.createElement(
             'label',
@@ -27666,7 +27668,15 @@ var _classnames = __webpack_require__(15);
 
 var _classnames2 = _interopRequireDefault(_classnames);
 
+var _lodash = __webpack_require__(35);
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
+var _utils = __webpack_require__(33);
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -27677,33 +27687,158 @@ function _inherits(subClass, superClass) { if (typeof superClass !== "function" 
 var Question = function (_React$Component) {
   _inherits(Question, _React$Component);
 
-  function Question() {
+  function Question(props) {
     _classCallCheck(this, Question);
 
-    return _possibleConstructorReturn(this, (Question.__proto__ || Object.getPrototypeOf(Question)).apply(this, arguments));
+    // state
+    var _this = _possibleConstructorReturn(this, (Question.__proto__ || Object.getPrototypeOf(Question)).call(this, props));
+
+    _this.state = {
+      question: '', // question textarea value
+      explanation: '', // explanation input value
+      answerers: '', // answerers input value
+      questionIsValid: false, // question textarea value is valid
+      linkToTicket: true, // link checkbox
+      processing: false, // form is currently being submitted
+      submitted: false };
+    // bindings
+    _this.handleChange = _this.handleChange.bind(_this);
+    _this.handleSubmit = _this.handleSubmit.bind(_this);
+    return _this;
   }
 
   _createClass(Question, [{
+    key: 'validateQuestion',
+    value: function validateQuestion() {
+      var questionIsValid = _lodash2.default.trim(this.state.question).length > 0;
+      this.setState({ questionIsValid: questionIsValid });
+      return questionIsValid;
+    }
+  }, {
+    key: 'validateForm',
+    value: function validateForm() {
+      return this.validateQuestion();
+    }
+  }, {
+    key: 'resetFormValues',
+    value: function resetFormValues() {
+      this.setState({
+        question: '',
+        explanation: '',
+        answerers: '',
+        linkToTicket: true
+      });
+    }
+  }, {
+    key: 'submitForm',
+    value: function submitForm(userId) {
+      return fetch('https://rooms.bloomfire.ws/api/v2/questions', _lodash2.default.merge({}, _utils.fetchOpts, {
+        method: 'POST',
+        body: (0, _utils.getFormDataFromJSON)({
+          author: userId,
+          question: this.state.question,
+          explanation: this.state.explanation,
+          published: true,
+          public: false
+        })
+      }));
+      // TODO: submit to answerers API too
+    }
+  }, {
+    key: 'handleChange',
+    value: function handleChange(event) {
+      var _this2 = this;
+
+      var target = event.target,
+          // shortcut
+      value = target.type === 'checkbox' ? target.checked : target.value,
+          name = target.name;
+      this.setState(_defineProperty({}, name, value), function () {
+        if (_this2.state.submitted) {
+          if (name === 'question') {
+            _this2.validateQuestion();
+          }
+        }
+      });
+    }
+  }, {
+    key: 'handleSubmit',
+    value: function handleSubmit(event) {
+      var _this3 = this;
+
+      event.preventDefault();
+      this.setState({ submitted: true });
+      if (this.validateForm()) {
+        this.setState({ processing: true });
+        this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
+        .then(function (data) {
+          return data['currentUser.email'];
+        }) // extract the returned property
+        .then(_utils.getBloomfireUserIdByEmail) // look up current user's email via Bloomfire API
+        .then(this.submitForm.bind(this)) // submit form data
+        .then(function (response) {
+          return response.json();
+        }) // extract JSON from response
+        .then(function (data) {
+          if (_this3.state.linkToTicket) {
+            _this3.props.addLinkedResource({
+              id: data.id,
+              type: data.contribution_type
+            }, _this3.state.question);
+          }
+          _this3.setState({ processing: false });
+          _this3.resetFormValues();
+          var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
+              postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
+              message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
+          _this3.props.client.invoke('notify', message, 'notice');
+        });
+      }
+    }
+  }, {
     key: 'render',
     value: function render() {
-      var classNameForm = (0, _classnames2.default)('question', { selected: this.props.isSelected });
+      var classNameForm = (0, _classnames2.default)('question', { selected: this.props.isSelected }),
+          classNameQuestion = (0, _classnames2.default)({ invalid: this.state.submitted && !this.state.questionIsValid }),
+          classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing }),
+          questionPlaceholder = this.state.submitted && !this.state.questionIsValid ? 'Question required' : 'Question';
       return _react2.default.createElement(
         'form',
-        { className: classNameForm },
-        _react2.default.createElement('textarea', { placeholder: 'Question' }),
-        _react2.default.createElement('input', { type: 'text', placeholder: 'Description (optional)' }),
-        _react2.default.createElement('input', { className: 'last-field', type: 'text', placeholder: 'Assign an Answerer' }),
+        { className: classNameForm,
+          onSubmit: this.handleSubmit },
+        _react2.default.createElement('textarea', { name: 'question',
+          value: this.state.question,
+          placeholder: questionPlaceholder,
+          className: classNameQuestion,
+          onChange: this.handleChange }),
+        _react2.default.createElement('input', { type: 'text',
+          name: 'explanation',
+          value: this.state.explanation,
+          placeholder: 'Description (optional)',
+          onChange: this.handleChange }),
+        _react2.default.createElement('input', { type: 'text',
+          name: 'answerers',
+          value: this.state.answerers,
+          placeholder: 'Assign an Answerer (optional)',
+          className: 'last-field',
+          onChange: this.handleChange }),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },
-          _react2.default.createElement('input', { type: 'checkbox', id: 'link-question' }),
+          _react2.default.createElement('input', { type: 'checkbox',
+            id: 'link-question',
+            name: 'linkToTicket',
+            checked: this.state.linkToTicket,
+            onChange: this.handleChange }),
           _react2.default.createElement(
             'label',
             { htmlFor: 'link-question' },
             'Link Question to Ticket'
           )
         ),
-        _react2.default.createElement('input', { type: 'submit', value: 'Publish' })
+        _react2.default.createElement('input', { type: 'submit',
+          value: 'Publish',
+          className: classNameSubmit })
       );
     }
   }]);

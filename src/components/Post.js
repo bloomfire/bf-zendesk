@@ -17,11 +17,11 @@ class Post extends React.Component {
     // state
     this.state = {
       title: '', // title input value
-      description: '', // description input
-      body: '', // post body textarea
+      description: '', // description input value
+      body: '', // post body textarea value
       titleIsValid: false, // title input value is valid
       bodyIsValid: false, // body input value is valid
-      linkPost: true, // link checkbox
+      linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
       submitted: false, // form has ever been submitted
     };
@@ -51,7 +51,7 @@ class Post extends React.Component {
       title: '',
       description: '',
       body: '',
-      linkPost: true
+      linkToTicket: true
     });
   }
 
@@ -95,7 +95,7 @@ class Post extends React.Component {
         .then(this.submitForm.bind(this)) // submit form data
         .then(response => response.json()) // extract JSON from response
         .then(data => {
-          if (this.state.linkPost) {
+          if (this.state.linkToTicket) {
             this.props.addLinkedResource({
               id: data.id,
               type: data.contribution_type
@@ -116,12 +116,12 @@ class Post extends React.Component {
             'post',
             { selected: this.props.isSelected }
           ),
-          classNameSubmit = classNames({ processing: this.state.processing }),
           classNameTitle = classNames({ invalid: this.state.submitted && !this.state.titleIsValid }),
           classNameBody = classNames(
             'last-field',
             { invalid: this.state.submitted && !this.state.bodyIsValid }
           ),
+          classNameSubmit = classNames({ processing: this.state.processing }),
           titlePlaceholder = this.state.submitted && !this.state.titleIsValid ? 'Title required' : 'Title',
           bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body';
     return (
@@ -146,8 +146,8 @@ class Post extends React.Component {
         <p className="link-to-ticket">
           <input type="checkbox"
                  id="link-post"
-                 name="linkPost"
-                 checked={this.state.linkPost}
+                 name="linkToTicket"
+                 checked={this.state.linkToTicket}
                  onChange={this.handleChange}/>
           <label htmlFor="link-post">Link Post to Ticket</label>
         </p>

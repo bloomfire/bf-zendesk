@@ -28,7 +28,7 @@ class App extends React.Component {
     // bindings
     this.resize = this.resize.bind(this);
     this.addLinkedResource = this.addLinkedResource.bind(this);
-    console.log(123);
+    console.log(1);
   }
 
   componentDidMount() {

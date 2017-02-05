@@ -1,25 +1,145 @@
 import React from 'react';
 import classNames from 'classnames';
+import _ from 'lodash';
+import {
+  fetchOpts,
+  getBloomfireUserIdByEmail,
+  getFormDataFromJSON,
+  capitalizeFirstLetter
+}  from '../utils';
 
 
 
 class Question extends React.Component {
 
+  constructor(props) {
+    super(props);
+    // state
+    this.state = {
+      question: '', // question textarea value
+      explanation: '', // explanation input value
+      answerers: '', // answerers input value
+      questionIsValid: false, // question textarea value is valid
+      linkToTicket: true, // link checkbox
+      processing: false, // form is currently being submitted
+      submitted: false, // form has ever been submitted
+    };
+    // bindings
+    this.handleChange = this.handleChange.bind(this);
+    this.handleSubmit = this.handleSubmit.bind(this);
+  }
+
+  validateQuestion() {
+    const questionIsValid = _.trim(this.state.question).length > 0;
+    this.setState({ questionIsValid });
+    return questionIsValid;
+  }
+
+  validateForm() {
+    return this.validateQuestion();
+  }
+
+  resetFormValues() {
+    this.setState({
+      question: '',
+      explanation: '',
+      answerers: '',
+      linkToTicket: true
+    });
+  }
+
+  submitForm(userId) {
+    return fetch(`https://rooms.bloomfire.ws/api/v2/questions`, _.merge({}, fetchOpts, {
+      method: 'POST',
+      body: getFormDataFromJSON({
+        author: userId,
+        question: this.state.question,
+        explanation: this.state.explanation,
+        published: true,
+        public: false
+      })
+    }));
+    // TODO: submit to answerers API too
+  }
+
+  handleChange(event) {
+    const target = event.target, // shortcut
+          value = target.type === 'checkbox' ? target.checked : target.value,
+          name = target.name;
+    this.setState({ [name]: value }, () => {
+      if (this.state.submitted) {
+        if (name === 'question') {
+          this.validateQuestion();
+        }
+      }
+    });
+  }
+
+  handleSubmit(event) {
+    event.preventDefault();
+    this.setState({ submitted: true });
+    if (this.validateForm()) {
+      this.setState({ processing: true });
+      this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
+        .then(data => data['currentUser.email']) // extract the returned property
+        .then(getBloomfireUserIdByEmail) // look up current user's email via Bloomfire API
+        .then(this.submitForm.bind(this)) // submit form data
+        .then(response => response.json()) // extract JSON from response
+        .then(data => {
+          if (this.state.linkToTicket) {
+            this.props.addLinkedResource({
+              id: data.id,
+              type: data.contribution_type
+            }, this.state.question);
+          }
+          this.setState({ processing: false });
+          this.resetFormValues();
+          const resource = capitalizeFirstLetter(data.contribution_type),
+                postURL = `https://rooms.bloomfire.ws/${data.contribution_type}s/${data.id}`,
+                message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}">${postURL}</a>`;
+          this.props.client.invoke('notify', message, 'notice');
+        });
+    }
+  }
+
   render() {
     const classNameForm = classNames(
-      'question',
-      { selected: this.props.isSelected }
-    );
+            'question',
+            { selected: this.props.isSelected }
+          ),
+          classNameQuestion = classNames({ invalid: this.state.submitted && !this.state.questionIsValid }),
+          classNameSubmit = classNames({ processing: this.state.processing }),
+          questionPlaceholder = this.state.submitted && !this.state.questionIsValid ? 'Question required' : 'Question';
     return (
-      <form className={classNameForm}>
-        <textarea placeholder="Question"></textarea>
-        <input type="text" placeholder="Description (optional)"/>
-        <input className="last-field" type="text" placeholder="Assign an Answerer"/>
+      <form className={classNameForm}
+            onSubmit={this.handleSubmit}>
+        <textarea name="question"
+                  value={this.state.question}
+                  placeholder={questionPlaceholder}
+                  className={classNameQuestion}
+                  onChange={this.handleChange}></textarea>
+        <input type="text"
+               name="explanation"
+               value={this.state.explanation}
+               placeholder="Description (optional)"
+               onChange={this.handleChange}/>
+        <input type="text"
+               name="answerers"
+               value={this.state.answerers}
+               placeholder="Assign an Answerer (optional)"
+               className="last-field"
+               onChange={this.handleChange}/>
         <p className="link-to-ticket">
-          <input type="checkbox" id="link-question"/>
+          <input type="checkbox"
+                 id="link-question"
+                 name="linkToTicket"
+                 checked={this.state.linkToTicket}
+                 onChange={this.handleChange}/>
           <label htmlFor="link-question">Link Question to Ticket</label>
         </p>
-        <input type="submit" value="Publish"/>
+        <input type="submit"
+               value="Publish"
+               className={classNameSubmit}/>
       </form>
     );
   }
