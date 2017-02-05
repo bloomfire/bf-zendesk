@@ -45,29 +45,36 @@ section.search {
     margin-top: 5px;
   }
 
-  .link-list {
-    li {
-      &:hover {
-        background-color: #eceaec;
+  li {
+    &:hover {
+      background-color: #eceaec;
 
-        a {
-          font-weight: 600;
-        }
+      a {
+        font-weight: 600;
       }
-    }
-
-    a {
-      color: inherit;
 
       .icon-link {
-        fill: #404040;
-        opacity: 0.3;
-
-        &:hover,
-        &:active {
-          opacity: 0.5;
-        }
+        visibility: visible;
       }
     }
+
+    .icon-link {
+      fill: #404040;
+      opacity: 0.3;
+      visibility: hidden;
+
+      &:hover,
+      &:active {
+        opacity: 0.5;
+      }
+    }
+  }
+
+  a {
+    color: inherit;
+  }
+
+  .public {
+    color: #7d7c7d;
   }
 }

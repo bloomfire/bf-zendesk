@@ -99,7 +99,8 @@ class Search extends React.Component {
             'message',
             { 'no-results': !resultsExist }
           ),
-          classNameSubmit = classNames({ processing: this.state.searched && this.state.processing });
+          classNameSubmit = classNames({ processing: this.state.searched && this.state.processing }),
+          buttonLabel = this.state.searched && this.state.processing ? 'Searching' : 'Search';
     let message;
     if (this.state.searched) {
       message = resultsExist ? 'The following results matched your search:' : 'No results found.';
@@ -118,7 +119,7 @@ class Search extends React.Component {
                        active={this.state.value.length > 0}/>
           </div>
           <input type="submit"
-                 value="Search"
+                 value={buttonLabel}
                  className={classNameSubmit}/>
         </form>
         <div className="results">
@@ -126,7 +127,8 @@ class Search extends React.Component {
           {(!this.state.processing && !this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
           {this.state.results.length > 0 &&
             <div className="content-box">
-              <LinkList links={this.state.results}/>
+              <LinkList links={this.state.results}
+                        includeBrokenLink={false}/>
             </div>
           }
         </div>

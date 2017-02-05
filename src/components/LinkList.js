@@ -16,7 +16,8 @@ class LinkList extends React.Component {
       key: link.id,
       href: `https://rooms.bloomfire.ws/${link.contribution_type}s/${link.id}`,
       title: link.title || link.question,
-      public: link.public
+      public: link.public,
+      includeBrokenLink: this.props.includeBrokenLink
     }));
     return (
       <ul className="link-list">
