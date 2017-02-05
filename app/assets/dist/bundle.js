@@ -27517,7 +27517,9 @@ var Post = function (_React$Component) {
       bodyIsValid: false, // body input value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
-      submitted: false };
+      submitted: false, // form has ever been submitted
+      published: false // form was successfully submitted
+    };
     // bindings
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
@@ -27612,7 +27614,14 @@ var Post = function (_React$Component) {
               type: data.contribution_type
             }, _this3.state.title);
           }
-          _this3.setState({ processing: false });
+          _this3.setState({
+            processing: false,
+            published: true
+          }, function () {
+            setTimeout(function () {
+              _this3.setState({ published: false });
+            }, 2000);
+          });
           _this3.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
@@ -27629,7 +27638,8 @@ var Post = function (_React$Component) {
           classNameBody = (0, _classnames2.default)('last-field', { invalid: this.state.submitted && !this.state.bodyIsValid }),
           classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing }),
           titlePlaceholder = this.state.submitted && !this.state.titleIsValid ? 'Title required' : 'Title',
-          bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body';
+          bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body',
+          buttonLabel = this.state.published ? 'Published!' : 'Publish';
       return _react2.default.createElement(
         'form',
         { className: classNameForm,
@@ -27665,7 +27675,7 @@ var Post = function (_React$Component) {
           )
         ),
         _react2.default.createElement('input', { type: 'submit',
-          value: 'Publish',
+          value: buttonLabel,
           className: classNameSubmit })
       );
     }
@@ -27729,7 +27739,9 @@ var Question = function (_React$Component) {
       questionIsValid: false, // question textarea value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
-      submitted: false };
+      submitted: false, // form has ever been submitted
+      published: false // form was successfully submitted
+    };
     // bindings
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
@@ -27837,7 +27849,14 @@ var Question = function (_React$Component) {
               type: data.contribution_type
             }, _this3.state.question);
           }
-          _this3.setState({ processing: false });
+          _this3.setState({
+            processing: false,
+            published: true
+          }, function () {
+            setTimeout(function () {
+              _this3.setState({ published: false });
+            }, 2000);
+          });
           _this3.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
@@ -27852,7 +27871,8 @@ var Question = function (_React$Component) {
       var classNameForm = (0, _classnames2.default)('question', { selected: this.props.isSelected }),
           classNameQuestion = (0, _classnames2.default)({ invalid: this.state.submitted && !this.state.questionIsValid }),
           classNameSubmit = (0, _classnames2.default)({ processing: this.state.processing }),
-          questionPlaceholder = this.state.submitted && !this.state.questionIsValid ? 'Question required' : 'Question';
+          questionPlaceholder = this.state.submitted && !this.state.questionIsValid ? 'Question required' : 'Question',
+          buttonLabel = this.state.published ? 'Published!' : 'Publish';
       return _react2.default.createElement(
         'form',
         { className: classNameForm,
@@ -27888,7 +27908,7 @@ var Question = function (_React$Component) {
           )
         ),
         _react2.default.createElement('input', { type: 'submit',
-          value: 'Publish',
+          value: buttonLabel,
           className: classNameSubmit })
       );
     }

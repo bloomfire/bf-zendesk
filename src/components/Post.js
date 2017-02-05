@@ -24,6 +24,7 @@ class Post extends React.Component {
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
       submitted: false, // form has ever been submitted
+      published: false // form was successfully submitted
     };
     // bindings
     this.handleChange = this.handleChange.bind(this);
@@ -101,7 +102,14 @@ class Post extends React.Component {
               type: data.contribution_type
             }, this.state.title);
           }
-          this.setState({ processing: false });
+          this.setState({
+            processing: false,
+            published: true
+          }, () => {
+            setTimeout(() => {
+              this.setState({ published: false });
+            }, 2000);
+          });
           this.resetFormValues();
           const resource = capitalizeFirstLetter(data.contribution_type),
                 postURL = `https://rooms.bloomfire.ws/${data.contribution_type}s/${data.id}`,
@@ -123,7 +131,8 @@ class Post extends React.Component {
           ),
           classNameSubmit = classNames({ processing: this.state.processing }),
           titlePlaceholder = this.state.submitted && !this.state.titleIsValid ? 'Title required' : 'Title',
-          bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body';
+          bodyPlaceholder = this.state.submitted && !this.state.bodyIsValid ? 'Post body required' : 'Post body',
+          buttonLabel = this.state.published ? 'Published!' : 'Publish';
     return (
       <form className={classNameForm}
             onSubmit={this.handleSubmit}>
@@ -152,7 +161,7 @@ class Post extends React.Component {
           <label htmlFor="link-post">Link Post to Ticket</label>
         </p>
         <input type="submit"
-               value="Publish"
+               value={buttonLabel}
                className={classNameSubmit}/>
       </form>
     );
