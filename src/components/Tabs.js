@@ -8,7 +8,7 @@ class Tabs extends React.Component {
   constructor(props) {
     super(props);
     this.state = {
-      selectedTabId: this.props.initialTabId
+      selectedTabID: this.props.initialTabID
     };
     this.handleClick = this.handleClick.bind(this);
   }
@@ -16,7 +16,7 @@ class Tabs extends React.Component {
   handleClick(event) {
     this.props.handleClick(event); // run callback passed in via prop
     this.setState({
-      selectedTabId: event.currentTarget.dataset.id
+      selectedTabID: event.currentTarget.dataset.id
     });
   }
 
@@ -24,12 +24,12 @@ class Tabs extends React.Component {
     const classNamePostTab = classNames(
             'tab',
             'tab-add-post',
-            { selected: this.state.selectedTabId === '1' }
+            { selected: this.state.selectedTabID === '1' }
           ),
           classNameQuestionTab = classNames(
             'tab',
             'tab-add-question',
-            { selected: this.state.selectedTabId === '2' }
+            { selected: this.state.selectedTabID === '2' }
           );
     return (
       <ul className="tabs">

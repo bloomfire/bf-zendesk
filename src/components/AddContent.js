@@ -13,10 +13,10 @@ class AddContent extends React.Component {
 
   constructor(props) {
     super(props);
-    this.initialTabId = '1';
+    this.initialTabID = '1';
     this.state = {
       isCollapsed: false,
-      selectedTabId: this.initialTabId
+      selectedTabID: this.initialTabID
     };
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
     this.switchTab = this.switchTab.bind(this);
@@ -37,7 +37,7 @@ class AddContent extends React.Component {
   }
 
   switchTab(event) {
-    this.setState({ selectedTabId: event.currentTarget.dataset.id });
+    this.setState({ selectedTabID: event.currentTarget.dataset.id });
   }
 
   render() {
@@ -52,11 +52,11 @@ class AddContent extends React.Component {
         <CaretIcon handleClick={this.toggleCollapsed}/>
         <div className="section-content">
           <Tabs handleClick={this.switchTab}
-                initialTabId={this.initialTabId}/>
-          <Post isSelected={this.state.selectedTabId === '1'}
+                initialTabID={this.initialTabID}/>
+          <Post isSelected={this.state.selectedTabID === '1'}
                 client={this.props.client}
                 addLinkedResource={this.props.addLinkedResource}/>
-          <Question isSelected={this.state.selectedTabId === '2'}
+          <Question isSelected={this.state.selectedTabID === '2'}
                     client={this.props.client}
                     addLinkedResource={this.props.addLinkedResource}/>
         </div>

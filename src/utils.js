@@ -39,7 +39,7 @@ const decodeLinkedResource = function (resourceTxt) {
 const decodeLinkedResources = resourcesTxt => resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
 
 // given a Zendesk user's email
-const getBloomfireUserIdByEmail = function (email) {
+const getBloomfireUserIDByEmail = function (email) {
   return fetch('https://rooms.bloomfire.ws/api/v2/users?fields=email,id', fetchOpts)
            .then(response => response.json())
            .then(users => {
@@ -68,7 +68,7 @@ export {
   encodeLinkedResources,
   decodeLinkedResource,
   decodeLinkedResources,
-  getBloomfireUserIdByEmail,
+  getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter
 };

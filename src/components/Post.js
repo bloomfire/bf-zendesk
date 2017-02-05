@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import {
   fetchOpts,
-  getBloomfireUserIdByEmail,
+  getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter
 }  from '../utils';
@@ -55,11 +55,11 @@ class Post extends React.Component {
     });
   }
 
-  submitForm(userId) {
+  submitForm(userID) {
     return fetch(`https://rooms.bloomfire.ws/api/v2/posts`, _.merge({}, fetchOpts, {
       method: 'POST',
       body: getFormDataFromJSON({
-        author: userId,
+        author: userID,
         title: this.state.title,
         description: this.state.description,
         post_body: this.state.body,
@@ -91,7 +91,7 @@ class Post extends React.Component {
       this.setState({ processing: true });
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIdByEmail) // look up current user's email via Bloomfire API
+        .then(getBloomfireUserIDByEmail) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(response => response.json()) // extract JSON from response
         .then(data => {

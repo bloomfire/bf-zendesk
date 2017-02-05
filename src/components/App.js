@@ -28,7 +28,7 @@ class App extends React.Component {
     // bindings
     this.resize = this.resize.bind(this);
     this.addLinkedResource = this.addLinkedResource.bind(this);
-    console.log(1);
+    console.log(12);
   }
 
   componentDidMount() {
@@ -49,11 +49,11 @@ class App extends React.Component {
   //
   // TODO: also add to this.state.linkedResources
   addLinkedResource(resourceObj, title) {
-    let ticketId;
+    let ticketID;
     this.getFromTicket('id')
       .then(data => {
-        ticketId = data.id;
-        return this.client.request(`/api/v2/tickets/${ticketId}.json`);
+        ticketID = data.id;
+        return this.client.request(`/api/v2/tickets/${ticketID}.json`);
       })
       .then(data => {
         const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
@@ -65,7 +65,7 @@ class App extends React.Component {
           id: resourceObj.id
         });
         return this.client.request({
-          url: `/api/v2/tickets/${ticketId}.json`,
+          url: `/api/v2/tickets/${ticketID}.json`,
           type: 'PUT',
           dataType: 'json',
           contentType: 'application/json',

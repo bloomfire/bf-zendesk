@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import {
   fetchOpts,
-  getBloomfireUserIdByEmail,
+  getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter
 }  from '../utils';
@@ -18,7 +18,7 @@ class Question extends React.Component {
     this.state = {
       question: '', // question textarea value
       explanation: '', // explanation input value
-      answerers: '', // answerers input value
+      answerers: [{ id: 11972, name: 'Michael Pazienza' }], // answerers input value
       questionIsValid: false, // question textarea value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
@@ -48,18 +48,26 @@ class Question extends React.Component {
     });
   }
 
-  submitForm(userId) {
-    return fetch(`https://rooms.bloomfire.ws/api/v2/questions`, _.merge({}, fetchOpts, {
+  submitForm(userID) {
+    return fetch('https://rooms.bloomfire.ws/api/v2/questions', _.merge({}, fetchOpts, {
       method: 'POST',
       body: getFormDataFromJSON({
-        author: userId,
+        author: userID,
         question: this.state.question,
         explanation: this.state.explanation,
         published: true,
         public: false
       })
     }));
-    // TODO: submit to answerers API too
+  }
+
+  // POST /api/v2/questions/:id/ask_to_answer { "ask_to_answer_ids": [:membership_id1, :membership_id2] }
+  submitAnswerers(questionID) {
+    const answererIDs = this.state.answerers.map(answerer => answerer.id);
+    return fetch(`https://rooms.bloomfire.ws/api/v2/questions/${questionID}/ask_to_answer`, _.merge({}, fetchOpts, {
+      method: 'POST',
+      body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
+    }));
   }
 
   handleChange(event) {
@@ -82,9 +90,17 @@ class Question extends React.Component {
       this.setState({ processing: true });
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIdByEmail) // look up current user's email via Bloomfire API
+        .then(getBloomfireUserIDByEmail) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(response => response.json()) // extract JSON from response
+        .then(data => { // submit answerers, if needed, or just return response data again immediately
+          if (this.state.answerers.length > 0) {
+            return this.submitAnswerers(data.id)
+              .then(response => response.json())
+          } else {
+            return data;
+          }
+        })
         .then(data => {
           if (this.state.linkToTicket) {
             this.props.addLinkedResource({
