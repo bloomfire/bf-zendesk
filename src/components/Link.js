@@ -17,8 +17,8 @@ class Link extends React.Component {
       <li>
         {this.props.public && <p className="public">Public</p>}
         <span className="icon-link-container">
-          <LinkIcon onClick={this.props.handleClick}/>
-          {this.props.includeBrokenLink && <BrokenLinkIcon onClick={this.props.handleClick}/>}
+          <LinkIcon handleClick={this.props.handleClick}/>
+          {this.props.includeBrokenLink && <BrokenLinkIcon handleClick={this.props.handleClick}/>}
         </span>
         <a href={this.props.href}
            target="_blank">{this.props.title}</a>

@@ -57,6 +57,14 @@ const getFormDataFromJSON = function (obj) {
 
 const capitalizeFirstLetter = (str) => `${str.charAt(0).toUpperCase()}${str.slice(1)}`;
 
+const trimResource = (resource) => ({
+  id: resource.id,
+  type: resource.contribution_type,
+  public: resource.public,
+  title: resource.title || resource.question,
+  display: true // set to display initially
+});
+
 
 
 export {
@@ -70,5 +78,6 @@ export {
   decodeLinkedResources,
   getBloomfireUserIDByEmail,
   getFormDataFromJSON,
-  capitalizeFirstLetter
+  capitalizeFirstLetter,
+  trimResource
 };

@@ -3510,7 +3510,7 @@ module.exports = SyntheticUIEvent;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
+exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
 
 var _lodash = __webpack_require__(28);
 
@@ -3590,6 +3590,16 @@ var capitalizeFirstLetter = function capitalizeFirstLetter(str) {
   return '' + str.charAt(0).toUpperCase() + str.slice(1);
 };
 
+var trimResource = function trimResource(resource) {
+  return {
+    id: resource.id,
+    type: resource.contribution_type,
+    public: resource.public,
+    title: resource.title || resource.question,
+    display: true // set to display initially
+  };
+};
+
 exports.fetchOpts = fetchOpts;
 exports.getResources = getResources;
 exports.getResourceURL = getResourceURL;
@@ -3601,6 +3611,7 @@ exports.decodeLinkedResources = decodeLinkedResources;
 exports.getBloomfireUserIDByEmail = getBloomfireUserIDByEmail;
 exports.getFormDataFromJSON = getFormDataFromJSON;
 exports.capitalizeFirstLetter = capitalizeFirstLetter;
+exports.trimResource = trimResource;
 
 /***/ }),
 /* 28 */
@@ -24089,20 +24100,23 @@ var LinkList = function (_React$Component) {
     value: function render() {
       var _this2 = this;
 
-      var linkPropSet = this.props.links.map(function (link) {
-        return {
-          key: link.id,
-          href: 'https://rooms.bloomfire.ws/' + link.contribution_type + 's/' + link.id,
-          title: link.title || link.question,
-          public: link.public,
-          includeBrokenLink: _this2.props.includeBrokenLink
-        };
-      });
+      var links = _.filter(this.props.links, function (link) {
+        return link.display;
+      }); // remove links not meant to be displayed
       return _react2.default.createElement(
         'ul',
         { className: 'link-list' },
-        linkPropSet.map(function (linkProps) {
-          return _react2.default.createElement(_Link2.default, linkProps);
+        links.map(function (link) {
+          var handleClick = _this2.props.handleClick.bind(_this2, {
+            id: link.id,
+            type: link.contribution_type
+          });
+          return _react2.default.createElement(_Link2.default, { key: link.id,
+            href: 'https://rooms.bloomfire.ws/' + link.contribution_type + 's/' + link.id,
+            title: link.title,
+            'public': link.public,
+            includeBrokenLink: _this2.props.includeBrokenLink,
+            handleClick: handleClick });
         })
       );
     }
@@ -26883,12 +26897,16 @@ var App = function (_React$Component) {
     _this.resizeInterval = null;
     // state
     _this.state = {
-      linkedResources: []
+      searchResults: [], // results from either initial search or user-initiated search
+      linkedResources: [] // list of linked resources
     };
     // bindings
     _this.resize = _this.resize.bind(_this);
+    _this.createLinkedResource = _this.createLinkedResource.bind(_this);
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
-    console.log(12);
+    _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
+    _this.setSearchResults = _this.setSearchResults.bind(_this);
+    console.log(123);
     return _this;
   }
 
@@ -26907,16 +26925,22 @@ var App = function (_React$Component) {
       this.getLinkedResourcesFromTicket().then(function (resourceArr) {
         return resourceArr.map(_utils.getResourceAPIURL);
       }).then(_utils.getResources).then(function (linkedResources) {
+        linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
         _this2.setState({ linkedResources: linkedResources });
       });
     }
+  }, {
+    key: 'setSearchResults',
+    value: function setSearchResults(results) {
+      this.setState({ searchResults: results });
+    }
 
     //
-    // TODO: also add to this.state.linkedResources
+    // TODO: DRY/modularize with .addLinkedResource() and .removeLinkedResource()
 
   }, {
-    key: 'addLinkedResource',
-    value: function addLinkedResource(resourceObj, title) {
+    key: 'createLinkedResource',
+    value: function createLinkedResource(resourceObj, title) {
       var _this3 = this;
 
       var ticketID = void 0;
@@ -26958,11 +26982,69 @@ var App = function (_React$Component) {
       });
     }
   }, {
-    key: 'removeLinkedResource',
+    key: 'addLinkedResource',
 
 
     //
-    value: function removeLinkedResource(resourceObj) {}
+    // TODO: DRY/modularize with .createLinkedResource() and .removeLinkedResource()
+    value: function addLinkedResource(resourceObj) {
+      var chosenSearchResult = _.find(this.state.searchResults, function (searchResult) {
+        return searchResult.id === resourceObj.id;
+      }),
+          updatedSearchResults = this.state.searchResults.map(function (searchResult) {
+        if (searchResult.id === resourceObj.id) {
+          searchResult.display = false;
+        }
+        return searchResult;
+      });
+      this.setState({
+        searchResults: updatedSearchResults,
+        linkedResources: [].concat(_toConsumableArray(this.state.linkedResources), [chosenSearchResult])
+      });
+    }
+
+    //
+    // TODO: DRY/modularize with .createLinkedResource and .addLinkedResource()
+
+  }, {
+    key: 'removeLinkedResource',
+    value: function removeLinkedResource(resourceObj) {
+      var _this4 = this;
+
+      var ticketID = void 0;
+      this.getFromTicket('id').then(function (data) {
+        ticketID = data.id;
+        return _this4.client.request('/api/v2/tickets/' + ticketID + '.json');
+      }).then(function (data) {
+        var resourceTxt = _.result(_.find(data.ticket.custom_fields, function (field) {
+          return field.id === 54394587; // TODO: make dynamic
+        }), 'value');
+        var resourceArr = (0, _utils.decodeLinkedResources)(resourceTxt);
+        resourceArr = _.reject(resourceArr, function (resource) {
+          return resource.id === resourceObj.id;
+        });
+        return _this4.client.request({
+          url: '/api/v2/tickets/' + ticketID + '.json',
+          type: 'PUT',
+          dataType: 'json',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            ticket: {
+              custom_fields: [{
+                id: 54394587, // TODO: make dynamic
+                value: (0, _utils.encodeLinkedResources)(resourceArr)
+              }]
+            }
+          })
+        });
+      }).then(function (data) {
+        _this4.setState({
+          linkedResources: _.reject(_this4.state.linkedResources, function (linkedResource) {
+            return linkedResource.id === resourceObj.id;
+          })
+        });
+      });
+    }
   }, {
     key: 'getFromTicket',
 
@@ -27024,13 +27106,17 @@ var App = function (_React$Component) {
         'main',
         null,
         _react2.default.createElement(_Search2.default, { client: this.client,
-          resize: this.resize }),
+          resize: this.resize,
+          results: this.state.searchResults,
+          setResults: this.setSearchResults,
+          addLinkedResource: this.addLinkedResource }),
         _react2.default.createElement(_LinkedResources2.default, { client: this.client,
           resize: this.resize,
-          links: this.state.linkedResources }),
+          links: this.state.linkedResources,
+          removeLinkedResource: this.removeLinkedResource }),
         _react2.default.createElement(_AddContent2.default, { client: this.client,
           resize: this.resize,
-          addLinkedResource: this.addLinkedResource })
+          createLinkedResource: this.createLinkedResource })
       );
     }
   }]);
@@ -27176,10 +27262,10 @@ var AddContent = function (_React$Component) {
             initialTabID: this.initialTabID }),
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabID === '1',
             client: this.props.client,
-            addLinkedResource: this.props.addLinkedResource }),
+            createLinkedResource: this.props.createLinkedResource }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabID === '2',
             client: this.props.client,
-            addLinkedResource: this.props.addLinkedResource })
+            createLinkedResource: this.props.createLinkedResource })
         )
       );
     }
@@ -27312,8 +27398,8 @@ var Link = function (_React$Component) {
         _react2.default.createElement(
           'span',
           { className: 'icon-link-container' },
-          _react2.default.createElement(_LinkIcon2.default, { onClick: this.props.handleClick }),
-          this.props.includeBrokenLink && _react2.default.createElement(_BrokenLinkIcon2.default, { onClick: this.props.handleClick })
+          _react2.default.createElement(_LinkIcon2.default, { handleClick: this.props.handleClick }),
+          this.props.includeBrokenLink && _react2.default.createElement(_BrokenLinkIcon2.default, { handleClick: this.props.handleClick })
         ),
         _react2.default.createElement(
           'a',
@@ -27417,7 +27503,8 @@ var LinkedResources = function (_React$Component) {
       var boxContents = void 0;
       if (this.props.links.length > 0) {
         boxContents = _react2.default.createElement(_LinkList2.default, { links: this.props.links,
-          includeBrokenLink: true });
+          includeBrokenLink: true,
+          handleClick: this.props.removeLinkedResource });
       } else {
         boxContents = _react2.default.createElement(
           'div',
@@ -27993,7 +28080,6 @@ var Search = function (_React$Component) {
 
     _this.state = {
       value: '', // from search input
-      results: [], // results from either initial search or user-initiated search
       searched: false, // a user-initiated search has been performed (not still the initial search)
       processing: false // search is currently running
     };
@@ -28032,7 +28118,7 @@ var Search = function (_React$Component) {
           return result.type === 'post' || result.type === 'question';
         }).map(function (result) {
           return 'https://rooms.bloomfire.ws/api/v2/' + result.type + 's/' + result.instance.id;
-        }).slice(0, 5);
+        });
         return (0, _utils.getResources)(resourceURLs);
       });
     }
@@ -28043,10 +28129,12 @@ var Search = function (_React$Component) {
 
       this.setState({ processing: true });
       this.getTicketDescription().then(this.getSearchResults.bind(this)).then(function (results) {
-        _this2.setState({
-          results: results,
-          processing: false
-        });
+        results = _lodash2.default.filter(results, function (result) {
+          return result.published;
+        }); // remove unpublished results
+        results = results.map(_utils.trimResource); // remove unnecessary properties
+        _this2.props.setResults(results);
+        _this2.setState({ processing: false });
       });
     }
   }, {
@@ -28060,16 +28148,14 @@ var Search = function (_React$Component) {
       var _this3 = this;
 
       event.preventDefault();
+      this.props.setResults([]);
       this.setState({
-        results: [],
         searched: true,
         processing: true
       });
       this.getSearchResults(this.state.value).then(function (results) {
-        _this3.setState({
-          results: results,
-          processing: false
-        });
+        _this3.props.setResults(results);
+        _this3.setState({ processing: false });
       });
     }
   }, {
@@ -28080,7 +28166,7 @@ var Search = function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
-      var resultsExist = this.state.results.length > 0,
+      var resultsExist = this.props.results.length > 0,
           classNameMessage = (0, _classnames2.default)('message', { 'no-results': !resultsExist }),
           classNameSubmit = (0, _classnames2.default)({ processing: this.state.searched && this.state.processing }),
           buttonLabel = this.state.searched && this.state.processing ? 'Searching' : 'Search';
@@ -28123,11 +28209,12 @@ var Search = function (_React$Component) {
             { className: 'sub-message' },
             'Try searching your community.'
           ),
-          this.state.results.length > 0 && _react2.default.createElement(
+          this.props.results.length > 0 && _react2.default.createElement(
             'div',
             { className: 'content-box' },
-            _react2.default.createElement(_LinkList2.default, { links: this.state.results,
-              includeBrokenLink: false })
+            _react2.default.createElement(_LinkList2.default, { links: this.props.results,
+              includeBrokenLink: false,
+              handleClick: this.props.addLinkedResource })
           )
         )
       );

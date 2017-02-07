@@ -10,7 +10,8 @@ import {
   getResourceURL,
   getResourceAPIURL,
   encodeLinkedResources,
-  decodeLinkedResources
+  decodeLinkedResources,
+  trimResource
 } from '../utils';
 
 
@@ -23,12 +24,16 @@ class App extends React.Component {
     this.resizeInterval = null;
     // state
     this.state = {
-      linkedResources: []
+      searchResults: [], // results from either initial search or user-initiated search
+      linkedResources: [] // list of linked resources
     };
     // bindings
     this.resize = this.resize.bind(this);
+    this.createLinkedResource = this.createLinkedResource.bind(this);
     this.addLinkedResource = this.addLinkedResource.bind(this);
-    console.log(12);
+    this.removeLinkedResource = this.removeLinkedResource.bind(this);
+    this.setSearchResults = this.setSearchResults.bind(this);
+    console.log(123);
   }
 
   componentDidMount() {
@@ -42,13 +47,18 @@ class App extends React.Component {
       .then(resourceArr => resourceArr.map(getResourceAPIURL))
       .then(getResources)
       .then(linkedResources => {
+        linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
         this.setState({ linkedResources });
       });
   }
 
+  setSearchResults(results) {
+    this.setState({ searchResults: results });
+  }
+
   //
-  // TODO: also add to this.state.linkedResources
-  addLinkedResource(resourceObj, title) {
+  // TODO: DRY/modularize with .addLinkedResource() and .removeLinkedResource()
+  createLinkedResource(resourceObj, title) {
     let ticketID;
     this.getFromTicket('id')
       .then(data => {
@@ -93,8 +103,57 @@ class App extends React.Component {
   };
 
   //
-  removeLinkedResource(resourceObj) {
+  // TODO: DRY/modularize with .createLinkedResource() and .removeLinkedResource()
+  addLinkedResource(resourceObj) {
+    const chosenSearchResult = _.find(this.state.searchResults, searchResult => searchResult.id === resourceObj.id),
+          updatedSearchResults = this.state.searchResults.map((searchResult) => {
+            if (searchResult.id === resourceObj.id) {
+              searchResult.display = false;
+            }
+            return searchResult;
+          });
+    this.setState({
+      searchResults: updatedSearchResults,
+      linkedResources: [...this.state.linkedResources, chosenSearchResult]
+    });
+  }
 
+  //
+  // TODO: DRY/modularize with .createLinkedResource and .addLinkedResource()
+  removeLinkedResource(resourceObj) {
+    let ticketID;
+    this.getFromTicket('id')
+      .then(data => {
+        ticketID = data.id;
+        return this.client.request(`/api/v2/tickets/${ticketID}.json`);
+      })
+      .then(data => {
+        const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
+          return field.id === 54394587; // TODO: make dynamic
+        }), 'value');
+        let resourceArr = decodeLinkedResources(resourceTxt);
+        resourceArr = _.reject(resourceArr, resource => resource.id === resourceObj.id);
+        return this.client.request({
+          url: `/api/v2/tickets/${ticketID}.json`,
+          type: 'PUT',
+          dataType: 'json',
+          contentType: 'application/json',
+          data: JSON.stringify({
+            ticket: {
+              custom_fields: [
+                {
+                  id: 54394587, // TODO: make dynamic
+                  value: encodeLinkedResources(resourceArr)
+                }
+              ]
+            }
+          })
+        });
+      }).then(data => {
+        this.setState({
+          linkedResources: _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id)
+        })
+      });
   };
 
   // convenience wrapper to this.client.get()
@@ -138,13 +197,17 @@ class App extends React.Component {
     return (
       <main>
         <Search client={this.client}
-                resize={this.resize}/>
+                resize={this.resize}
+                results={this.state.searchResults}
+                setResults={this.setSearchResults}
+                addLinkedResource={this.addLinkedResource}/>
         <LinkedResources client={this.client}
                          resize={this.resize}
-                         links={this.state.linkedResources}/>
+                         links={this.state.linkedResources}
+                         removeLinkedResource={this.removeLinkedResource}/>
         <AddContent client={this.client}
                     resize={this.resize}
-                    addLinkedResource={this.addLinkedResource}/>
+                    createLinkedResource={this.createLinkedResource}/>
       </main>
     );
   }

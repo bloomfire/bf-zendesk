@@ -43,7 +43,8 @@ class LinkedResources extends React.Component {
     let boxContents;
     if (this.props.links.length > 0) {
       boxContents = <LinkList links={this.props.links}
-                              includeBrokenLink={true}/>;
+                              includeBrokenLink={true}
+                              handleClick={this.props.removeLinkedResource}/>;
     } else {
       boxContents = <div className="no-linked-resources">
                       <p className="message">No linked resources.</p>

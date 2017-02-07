@@ -12,16 +12,23 @@ class LinkList extends React.Component {
   }
 
   render() {
-    const linkPropSet = this.props.links.map(link => ({
-      key: link.id,
-      href: `https://rooms.bloomfire.ws/${link.contribution_type}s/${link.id}`,
-      title: link.title || link.question,
-      public: link.public,
-      includeBrokenLink: this.props.includeBrokenLink
-    }));
+    const links = _.filter(this.props.links, link => link.display); // remove links not meant to be displayed
     return (
       <ul className="link-list">
-        {linkPropSet.map(linkProps => <Link {...linkProps}/>)}
+        {links.map(link => {
+          const handleClick = this.props.handleClick.bind(this, {
+            id: link.id,
+            type: link.contribution_type
+          });
+          return (
+            <Link key={link.id}
+                  href={`https://rooms.bloomfire.ws/${link.contribution_type}s/${link.id}`}
+                  title={link.title}
+                  public={link.public}
+                  includeBrokenLink={this.props.includeBrokenLink}
+                  handleClick={handleClick}/>
+          );
+        })}
       </ul>
     );
   }

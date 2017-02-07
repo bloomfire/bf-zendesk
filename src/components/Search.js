@@ -3,7 +3,8 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import {
   fetchOpts,
-  getResources
+  getResources,
+  trimResource
 }  from '../utils';
 
 // components
@@ -19,7 +20,6 @@ class Search extends React.Component {
     // state
     this.state = {
       value: '', // from search input
-      results: [], // results from either initial search or user-initiated search
       searched: false, // a user-initiated search has been performed (not still the initial search)
       processing: false // search is currently running
     };
@@ -49,9 +49,8 @@ class Search extends React.Component {
              .then(response => response.json())
              .then(results => {
                const resourceURLs = results
-                                      .filter(result => result.type === 'post' || result.type === 'question')
+                                      .filter(result => (result.type === 'post' || result.type === 'question'))
                                       .map(result => `https://rooms.bloomfire.ws/api/v2/${result.type}s/${result.instance.id}`)
-                                      .slice(0, 5);
                return getResources(resourceURLs);
              });
   }
@@ -62,10 +61,10 @@ class Search extends React.Component {
       .getTicketDescription()
       .then(this.getSearchResults.bind(this))
       .then(results => {
-        this.setState({
-          results,
-          processing: false
-        });
+        results = _.filter(results, result => result.published); // remove unpublished results
+        results = results.map(trimResource); // remove unnecessary properties
+        this.props.setResults(results);
+        this.setState({ processing: false });
       });
   }
 
@@ -75,17 +74,15 @@ class Search extends React.Component {
 
   handleSubmit(event) {
     event.preventDefault();
+    this.props.setResults([]);
     this.setState({
-      results: [],
       searched: true,
       processing: true
     });
     this.getSearchResults(this.state.value)
       .then(results => {
-        this.setState({
-          results,
-          processing: false
-        });
+        this.props.setResults(results);
+        this.setState({ processing: false });
       });
   }
 
@@ -94,7 +91,7 @@ class Search extends React.Component {
   }
 
   render() {
-    const resultsExist = this.state.results.length > 0,
+    const resultsExist = this.props.results.length > 0,
           classNameMessage = classNames(
             'message',
             { 'no-results': !resultsExist }
@@ -125,10 +122,11 @@ class Search extends React.Component {
         <div className="results">
           {!this.state.processing && <p className={classNameMessage}>{message}</p>}
           {(!this.state.processing && !this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
-          {this.state.results.length > 0 &&
+          {this.props.results.length > 0 &&
             <div className="content-box">
-              <LinkList links={this.state.results}
-                        includeBrokenLink={false}/>
+              <LinkList links={this.props.results}
+                        includeBrokenLink={false}
+                        handleClick={this.props.addLinkedResource}/>
             </div>
           }
         </div>
