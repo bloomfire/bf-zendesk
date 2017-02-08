@@ -33,7 +33,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    console.log(123);
+    console.log(3);
   }
 
   componentDidMount() {
@@ -56,103 +56,87 @@ class App extends React.Component {
     this.setState({ searchResults: results });
   }
 
+  getZendeskTicket() {
+    return this.getFromTicket('id')
+             .then(data => this.client.request(`/api/v2/tickets/${data.id}.json`));
+  };
+
+  updateZendeskTicketCustomField(value) {
+    return this.getFromTicket('id')
+             .then(data => {
+               return this.client.request({
+                 url: `/api/v2/tickets/${data.id}.json`,
+                 type: 'PUT',
+                 dataType: 'json',
+                 contentType: 'application/json',
+                 data: JSON.stringify({
+                   ticket: {
+                     custom_fields: [
+                       {
+                         id: 54394587, // TODO: make dynamic
+                         value
+                       }
+                     ]
+                   }
+                 })
+               });
+             });
+  }
+
+  getResourceArr(data) {
+    const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
+      return field.id === 54394587; // TODO: make dynamic
+    }), 'value');
+    return decodeLinkedResources(resourceTxt);
+  }
+
   //
-  // TODO: DRY/modularize with .addLinkedResource() and .removeLinkedResource()
-  createLinkedResource(resourceObj, title) {
-    let ticketID;
-    this.getFromTicket('id')
+  createLinkedResource(resourceObj) {
+    this.getZendeskTicket()
       .then(data => {
-        ticketID = data.id;
-        return this.client.request(`/api/v2/tickets/${ticketID}.json`);
-      })
-      .then(data => {
-        const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
-          return field.id === 54394587; // TODO: make dynamic
-        }), 'value');
-        let resourceArr = decodeLinkedResources(resourceTxt);
+        let resourceArr = this.getResourceArr(data);
         resourceArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        return this.client.request({
-          url: `/api/v2/tickets/${ticketID}.json`,
-          type: 'PUT',
-          dataType: 'json',
-          contentType: 'application/json',
-          data: JSON.stringify({
-            ticket: {
-              custom_fields: [
-                {
-                  id: 54394587, // TODO: make dynamic
-                  value: encodeLinkedResources(resourceArr)
-                }
-              ]
-            }
-          })
-        });
+        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr));
       }).then(data => {
-        this.setState({
-          linkedResources: [...this.state.linkedResources, {
-            id: resourceObj.id,
-            contribution_type: resourceObj.type,
-            title,
-            public: false
-          }]
-        });
+        const linkedResources = [...this.state.linkedResources, {
+          display: true,
+          id: resourceObj.id,
+          public: false,
+          title: resourceObj.title,
+          type: resourceObj.type
+        }];
+        this.setState({ linkedResources });
       });
   };
 
   //
-  // TODO: DRY/modularize with .createLinkedResource() and .removeLinkedResource()
   addLinkedResource(resourceObj) {
-    const chosenSearchResult = _.find(this.state.searchResults, searchResult => searchResult.id === resourceObj.id),
-          updatedSearchResults = this.state.searchResults.map((searchResult) => {
+    let chosenSearchResult;
+    const searchResults = this.state.searchResults.map((searchResult) => {
             if (searchResult.id === resourceObj.id) {
-              searchResult.display = false;
+              chosenSearchResult = _.cloneDeep(searchResult); // save a copy
+              searchResult.display = false; // hide in search results
             }
             return searchResult;
           });
-    this.setState({
-      searchResults: updatedSearchResults,
-      linkedResources: [...this.state.linkedResources, chosenSearchResult]
-    });
+    this.createLinkedResource(chosenSearchResult);
+    this.setState({ searchResults });
   }
 
   //
-  // TODO: DRY/modularize with .createLinkedResource and .addLinkedResource()
+  // TODO: look for a matching id in searchResults and set display = true
   removeLinkedResource(resourceObj) {
-    let ticketID;
-    this.getFromTicket('id')
+    this.getZendeskTicket()
       .then(data => {
-        ticketID = data.id;
-        return this.client.request(`/api/v2/tickets/${ticketID}.json`);
-      })
-      .then(data => {
-        const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
-          return field.id === 54394587; // TODO: make dynamic
-        }), 'value');
-        let resourceArr = decodeLinkedResources(resourceTxt);
+        let resourceArr = this.getResourceArr(data);
         resourceArr = _.reject(resourceArr, resource => resource.id === resourceObj.id);
-        return this.client.request({
-          url: `/api/v2/tickets/${ticketID}.json`,
-          type: 'PUT',
-          dataType: 'json',
-          contentType: 'application/json',
-          data: JSON.stringify({
-            ticket: {
-              custom_fields: [
-                {
-                  id: 54394587, // TODO: make dynamic
-                  value: encodeLinkedResources(resourceArr)
-                }
-              ]
-            }
-          })
-        });
+        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr));
       }).then(data => {
-        this.setState({
-          linkedResources: _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id)
-        })
+        const linkedResources = _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id);
+        this.setState({ linkedResources });
       });
   };
 

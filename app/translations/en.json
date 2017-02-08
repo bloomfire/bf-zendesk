@@ -1,9 +1,17 @@
 {
   "app": {
-    "description": "Play the famous zen tunes in your help desk.",
-    "name": "Buddha Machine"
+    "name": "Bloomfire",
+    "description": "Search for and create content in Bloomfire from the comfort of your Zendesk portal.",
+    "parameters": {
+      "bloomfire_domain": {
+        "label": "Bloomfire Domain (e.g., rooms.bloomfire.ws)"
+      },
+      "bloomfire_api_key": {
+        "label": "API Key"
+      }
+    }
   },
-  "loading": "Welcome to this Sample App",
+  "loading": "Welcome to Bloomfire",
   "fetch": {
     "done": "Good",
     "fail": "failed to fetch information from the server"

@@ -7,7 +7,7 @@ Ensure that Ruby is installed ([rvm](https://rvm.io/) is recommended).
 To begin development:
 
 1. In a termimal window, From the repo root, run `npm run dev` to start Webpack in watch mode.
-1. In another terminal window, from the repo root, `cd app` and run `zat server` to start the Zendesk App Tools development server.
+1. In another terminal window, from the repo root, `cd app` and run `zat server -c settings.json` to start the Zendesk App Tools development server. You can instead run just `zat server` if you want to provide different app settings than the defaults in settings.json.
 1. Open a new Chrome Incognito tab and log in to Bloomfire: [https://rooms.bloomfire.ws/]
 1. Open another Chrome Incognito tab and navigate to a Zendesk ticket; e.g.: [https://mashbox.zendesk.com/agent/tickets/1?zat=true]
 1. Click the shield icon at the right of Chrome's address bar. In the popup that appears, click the "Load unsafe scripts" button.

@@ -111,10 +111,13 @@ class Question extends React.Component {
         })
         .then(data => {
           if (this.state.linkToTicket) {
-            this.props.addLinkedResource({
+            this.props.createLinkedResource({
+              display: true,
               id: data.id,
+              public: false,
+              title: this.state.question,
               type: data.contribution_type
-            }, this.state.question);
+            });
           }
           this.setState({
             processing: false,

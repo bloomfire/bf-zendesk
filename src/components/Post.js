@@ -105,10 +105,13 @@ class Post extends React.Component {
         .then(response => response.json()) // extract JSON from response
         .then(data => {
           if (this.state.linkToTicket) {
-            this.props.addLinkedResource({
+            this.props.createLinkedResource({
+              display: true,
               id: data.id,
+              public: false,
+              title: this.state.title,
               type: data.contribution_type
-            }, this.state.title);
+            });
           }
           this.setState({
             processing: false,
