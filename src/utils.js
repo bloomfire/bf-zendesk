@@ -36,7 +36,13 @@ const decodeLinkedResource = function (resourceTxt) {
 };
 
 // given a text string containing Bloomfire linked resources, return an array of linked resource objects
-const decodeLinkedResources = resourcesTxt => resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
+const decodeLinkedResources = function(resourcesTxt) {
+  if (resourcesTxt.length > 0) {
+    return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
+  } else {
+    return [];
+  }
+}
 
 // given a Zendesk user's email
 const getBloomfireUserIDByEmail = function (email) {

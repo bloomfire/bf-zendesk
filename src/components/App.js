@@ -205,6 +205,7 @@ class App extends React.Component {
         <LinkedResources client={this.client}
                          resize={this.resize}
                          links={this.state.linkedResources}
+                         hasSearchResults={this.state.searchResults.length > 0}
                          removeLinkedResource={this.removeLinkedResource}/>
         <AddContent client={this.client}
                     resize={this.resize}

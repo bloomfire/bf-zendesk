@@ -46,9 +46,11 @@ class LinkedResources extends React.Component {
                               includeBrokenLink={true}
                               handleClick={this.props.removeLinkedResource}/>;
     } else {
+      const clickToAdd = <p className="instructions">Click <LinkIcon/> to add</p>,
+            useSearch = <p className="instructions">Use search to find resources</p>;
       boxContents = <div className="no-linked-resources">
                       <p className="message">No linked resources.</p>
-                      <p className="instructions">Click <LinkIcon/> to add</p>
+                      {this.props.hasSearchResults ? clickToAdd : useSearch}
                     </div>;
     }
     return (
