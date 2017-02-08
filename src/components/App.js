@@ -42,8 +42,10 @@ class App extends React.Component {
     this.populateLinkedResources();
   }
 
+  // read linked resources from hidden ticket field and update state
   populateLinkedResources() {
-    this.getLinkedResourcesFromTicket()
+    this.getFromTicket('customField:custom_field_54394587')
+      .then(data => decodeLinkedResources(data['customField:custom_field_54394587']))
       .then(resourceArr => resourceArr.map(getResourceAPIURL))
       .then(getResources)
       .then(linkedResources => {
@@ -53,7 +55,21 @@ class App extends React.Component {
   }
 
   setSearchResults(results) {
-    this.setState({ searchResults: results });
+    const searchResults = this.hideLinkedResourcesInSearchResults(results);
+    this.setState({ searchResults });
+  }
+
+  hideLinkedResourcesInSearchResults(results) {
+    const searchResults = results.map((searchResult) => {
+            for (let i = 0; i < this.state.linkedResources.length; i++) {
+              if (this.state.linkedResources[i].id === searchResult.id) {
+                searchResult.display = false; // set flag to hide in UI
+                break;
+              }
+            }
+            return searchResult;
+          });
+    return searchResults;
   }
 
   getZendeskTicket() {
@@ -90,6 +106,21 @@ class App extends React.Component {
     return decodeLinkedResources(resourceTxt);
   }
 
+  findSearchResult(id) {
+    return _.find(this.state.searchResults, result => result.id === id);
+  }
+
+  //
+  setSearchResultDisplay(id, display) {
+    const searchResults = this.state.searchResults.map((searchResult) => {
+            if (searchResult.id === id) {
+              searchResult.display = display; // set flag to hide or show in UI
+            }
+            return searchResult;
+          });
+    this.setState({ searchResults });
+  }
+
   //
   createLinkedResource(resourceObj) {
     this.getZendeskTicket()
@@ -114,29 +145,21 @@ class App extends React.Component {
 
   //
   addLinkedResource(resourceObj) {
-    let chosenSearchResult;
-    const searchResults = this.state.searchResults.map((searchResult) => {
-            if (searchResult.id === resourceObj.id) {
-              chosenSearchResult = _.cloneDeep(searchResult); // save a copy
-              searchResult.display = false; // hide in search results
-            }
-            return searchResult;
-          });
-    this.createLinkedResource(chosenSearchResult);
-    this.setState({ searchResults });
+    this.createLinkedResource(this.findSearchResult(resourceObj.id));
+    this.setSearchResultDisplay(resourceObj.id, false);
   }
 
   //
-  // TODO: look for a matching id in searchResults and set display = true
   removeLinkedResource(resourceObj) {
-    this.getZendeskTicket()
+    this.getZendeskTicket() // load Zendesk ticket data from API
       .then(data => {
-        let resourceArr = this.getResourceArr(data);
-        resourceArr = _.reject(resourceArr, resource => resource.id === resourceObj.id);
-        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr));
+        let resourceArr = this.getResourceArr(data); // get array of linked resources
+        resourceArr = _.reject(resourceArr, resource => resource.id === resourceObj.id); // remove the pertinent linked resource
+        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr)); // save the new array of linked resources
       }).then(data => {
-        const linkedResources = _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id);
+        const linkedResources = _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id); // remove the pertinent linekd resource from the UI
         this.setState({ linkedResources });
+        this.setSearchResultDisplay(resourceObj.id, true);
       });
   };
 
@@ -153,12 +176,6 @@ class App extends React.Component {
         }
         return obj;
       });
-  }
-
-  // TODO: replace call(s) to this with .getFromTicket('customField:custom_field_54394587')
-  getLinkedResourcesFromTicket() {
-    return this.client.get('ticket.customField:custom_field_54394587') // TODO: how to get custom field ID dynamically?
-             .then(data => decodeLinkedResources(data['ticket.customField:custom_field_54394587']));
   }
 
   resize() {

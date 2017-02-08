@@ -24112,7 +24112,7 @@ var LinkList = function (_React$Component) {
             type: link.contribution_type
           });
           return _react2.default.createElement(_Link2.default, { key: link.id,
-            href: 'https://rooms.bloomfire.ws/' + link.contribution_type + 's/' + link.id,
+            href: 'https://rooms.bloomfire.ws/' + link.type + 's/' + link.id,
             title: link.title,
             'public': link.public,
             includeBrokenLink: _this2.props.includeBrokenLink,
@@ -26917,12 +26917,17 @@ var App = function (_React$Component) {
       this.lastHeight = this.node.clientHeight;
       this.populateLinkedResources();
     }
+
+    // read linked resources from hidden ticket field and update state
+
   }, {
     key: 'populateLinkedResources',
     value: function populateLinkedResources() {
       var _this2 = this;
 
-      this.getLinkedResourcesFromTicket().then(function (resourceArr) {
+      this.getFromTicket('customField:custom_field_54394587').then(function (data) {
+        return (0, _utils.decodeLinkedResources)(data['customField:custom_field_54394587']);
+      }).then(function (resourceArr) {
         return resourceArr.map(_utils.getResourceAPIURL);
       }).then(_utils.getResources).then(function (linkedResources) {
         linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
@@ -26932,24 +26937,41 @@ var App = function (_React$Component) {
   }, {
     key: 'setSearchResults',
     value: function setSearchResults(results) {
-      this.setState({ searchResults: results });
+      var searchResults = this.hideLinkedResourcesInSearchResults(results);
+      this.setState({ searchResults: searchResults });
+    }
+  }, {
+    key: 'hideLinkedResourcesInSearchResults',
+    value: function hideLinkedResourcesInSearchResults(results) {
+      var _this3 = this;
+
+      var searchResults = results.map(function (searchResult) {
+        for (var i = 0; i < _this3.state.linkedResources.length; i++) {
+          if (_this3.state.linkedResources[i].id === searchResult.id) {
+            searchResult.display = false; // set flag to hide in UI
+            break;
+          }
+        }
+        return searchResult;
+      });
+      return searchResults;
     }
   }, {
     key: 'getZendeskTicket',
     value: function getZendeskTicket() {
-      var _this3 = this;
+      var _this4 = this;
 
       return this.getFromTicket('id').then(function (data) {
-        return _this3.client.request('/api/v2/tickets/' + data.id + '.json');
+        return _this4.client.request('/api/v2/tickets/' + data.id + '.json');
       });
     }
   }, {
     key: 'updateZendeskTicketCustomField',
     value: function updateZendeskTicketCustomField(value) {
-      var _this4 = this;
+      var _this5 = this;
 
       return this.getFromTicket('id').then(function (data) {
-        return _this4.client.request({
+        return _this5.client.request({
           url: '/api/v2/tickets/' + data.id + '.json',
           type: 'PUT',
           dataType: 'json',
@@ -26973,30 +26995,51 @@ var App = function (_React$Component) {
       }), 'value');
       return (0, _utils.decodeLinkedResources)(resourceTxt);
     }
+  }, {
+    key: 'findSearchResult',
+    value: function findSearchResult(id) {
+      return _.find(this.state.searchResults, function (result) {
+        return result.id === id;
+      });
+    }
+
+    //
+
+  }, {
+    key: 'setSearchResultDisplay',
+    value: function setSearchResultDisplay(id, display) {
+      var searchResults = this.state.searchResults.map(function (searchResult) {
+        if (searchResult.id === id) {
+          searchResult.display = display; // set flag to hide or show in UI
+        }
+        return searchResult;
+      });
+      this.setState({ searchResults: searchResults });
+    }
 
     //
 
   }, {
     key: 'createLinkedResource',
     value: function createLinkedResource(resourceObj) {
-      var _this5 = this;
+      var _this6 = this;
 
       this.getZendeskTicket().then(function (data) {
-        var resourceArr = _this5.getResourceArr(data);
+        var resourceArr = _this6.getResourceArr(data);
         resourceArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        return _this5.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr));
+        return _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr));
       }).then(function (data) {
-        var linkedResources = [].concat(_toConsumableArray(_this5.state.linkedResources), [{
+        var linkedResources = [].concat(_toConsumableArray(_this6.state.linkedResources), [{
           display: true,
           id: resourceObj.id,
           public: false,
           title: resourceObj.title,
           type: resourceObj.type
         }]);
-        _this5.setState({ linkedResources: linkedResources });
+        _this6.setState({ linkedResources: linkedResources });
       });
     }
   }, {
@@ -27005,37 +27048,30 @@ var App = function (_React$Component) {
 
     //
     value: function addLinkedResource(resourceObj) {
-      var chosenSearchResult = void 0;
-      var searchResults = this.state.searchResults.map(function (searchResult) {
-        if (searchResult.id === resourceObj.id) {
-          chosenSearchResult = _.cloneDeep(searchResult); // save a copy
-          searchResult.display = false; // hide in search results
-        }
-        return searchResult;
-      });
-      this.createLinkedResource(chosenSearchResult);
-      this.setState({ searchResults: searchResults });
+      this.createLinkedResource(this.findSearchResult(resourceObj.id));
+      this.setSearchResultDisplay(resourceObj.id, false);
     }
 
     //
-    // TODO: look for a matching id in searchResults and set display = true
 
   }, {
     key: 'removeLinkedResource',
     value: function removeLinkedResource(resourceObj) {
-      var _this6 = this;
+      var _this7 = this;
 
-      this.getZendeskTicket().then(function (data) {
-        var resourceArr = _this6.getResourceArr(data);
+      this.getZendeskTicket() // load Zendesk ticket data from API
+      .then(function (data) {
+        var resourceArr = _this7.getResourceArr(data); // get array of linked resources
         resourceArr = _.reject(resourceArr, function (resource) {
           return resource.id === resourceObj.id;
-        });
-        return _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr));
+        }); // remove the pertinent linked resource
+        return _this7.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr)); // save the new array of linked resources
       }).then(function (data) {
-        var linkedResources = _.reject(_this6.state.linkedResources, function (linkedResource) {
+        var linkedResources = _.reject(_this7.state.linkedResources, function (linkedResource) {
           return linkedResource.id === resourceObj.id;
-        });
-        _this6.setState({ linkedResources: linkedResources });
+        }); // remove the pertinent linekd resource from the UI
+        _this7.setState({ linkedResources: linkedResources });
+        _this7.setSearchResultDisplay(resourceObj.id, true);
       });
     }
   }, {
@@ -27060,17 +27096,6 @@ var App = function (_React$Component) {
           }
         }
         return obj;
-      });
-    }
-
-    // TODO: replace call(s) to this with .getFromTicket('customField:custom_field_54394587')
-
-  }, {
-    key: 'getLinkedResourcesFromTicket',
-    value: function getLinkedResourcesFromTicket() {
-      return this.client.get('ticket.customField:custom_field_54394587') // TODO: how to get custom field ID dynamically?
-      .then(function (data) {
-        return (0, _utils.decodeLinkedResources)(data['ticket.customField:custom_field_54394587']);
       });
     }
   }, {

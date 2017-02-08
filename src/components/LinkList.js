@@ -22,7 +22,7 @@ class LinkList extends React.Component {
           });
           return (
             <Link key={link.id}
-                  href={`https://rooms.bloomfire.ws/${link.contribution_type}s/${link.id}`}
+                  href={`https://rooms.bloomfire.ws/${link.type}s/${link.id}`}
                   title={link.title}
                   public={link.public}
                   includeBrokenLink={this.props.includeBrokenLink}
