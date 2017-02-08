@@ -127,7 +127,7 @@ class Question extends React.Component {
           this.resetFormValues();
           const resource = capitalizeFirstLetter(data.contribution_type),
                 postURL = `https://rooms.bloomfire.ws/${data.contribution_type}s/${data.id}`,
-                message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}">${postURL}</a>`;
+                message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}" target="_blank">${postURL}</a>`;
           this.props.client.invoke('notify', message, 'notice');
         });
     }
@@ -158,7 +158,7 @@ class Question extends React.Component {
         <input type="text"
                name="answerers"
                value={this.state.answerers}
-               placeholder="Assign an Answerer (optional)"
+               placeholder="Ask member to answer (optional)"
                className="last-field"
                onChange={this.handleChange}/>
         <p className="link-to-ticket">

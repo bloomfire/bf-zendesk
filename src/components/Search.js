@@ -57,15 +57,24 @@ class Search extends React.Component {
 
   performInitialSearch() {
     this.setState({ processing: true });
+    this.performSearchByDescription();
+  }
+
+  performSearchByQuery(query) {
     this
-      .getTicketDescription()
-      .then(this.getSearchResults.bind(this))
+      .getSearchResults(query)
       .then(results => {
         results = _.filter(results, result => result.published); // remove unpublished results
         results = results.map(trimResource); // remove unnecessary properties
         this.props.setResults(results);
         this.setState({ processing: false });
       });
+  }
+
+  performSearchByDescription() {
+    this
+      .getTicketDescription()
+      .then(this.performSearchByQuery.bind(this));
   }
 
   handleChange(event) {
@@ -79,11 +88,12 @@ class Search extends React.Component {
       searched: true,
       processing: true
     });
-    this.getSearchResults(this.state.value)
-      .then(results => {
-        this.props.setResults(results);
-        this.setState({ processing: false });
-      });
+    let query = _.trim(this.state.value);
+    if (query.length > 0) {
+      this.performSearchByQuery(query);
+    } else {
+      this.performSearchByDescription();
+    }
   }
 
   clearSearch(event) {

@@ -27752,7 +27752,7 @@ var Post = function (_React$Component) {
           _this4.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
-              message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
+              message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
           _this4.props.client.invoke('notify', message, 'notice');
         });
       }
@@ -27998,7 +27998,7 @@ var Question = function (_React$Component) {
           _this4.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
               postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
-              message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '">' + postURL + '</a>';
+              message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
           _this4.props.client.invoke('notify', message, 'notice');
         });
       }
@@ -28028,7 +28028,7 @@ var Question = function (_React$Component) {
         _react2.default.createElement('input', { type: 'text',
           name: 'answerers',
           value: this.state.answerers,
-          placeholder: 'Assign an Answerer (optional)',
+          placeholder: 'Ask member to answer (optional)',
           className: 'last-field',
           onChange: this.handleChange }),
         _react2.default.createElement(
@@ -28160,10 +28160,15 @@ var Search = function (_React$Component) {
   }, {
     key: 'performInitialSearch',
     value: function performInitialSearch() {
+      this.setState({ processing: true });
+      this.performSearchByDescription();
+    }
+  }, {
+    key: 'performSearchByQuery',
+    value: function performSearchByQuery(query) {
       var _this2 = this;
 
-      this.setState({ processing: true });
-      this.getTicketDescription().then(this.getSearchResults.bind(this)).then(function (results) {
+      this.getSearchResults(query).then(function (results) {
         results = _lodash2.default.filter(results, function (result) {
           return result.published;
         }); // remove unpublished results
@@ -28173,6 +28178,11 @@ var Search = function (_React$Component) {
       });
     }
   }, {
+    key: 'performSearchByDescription',
+    value: function performSearchByDescription() {
+      this.getTicketDescription().then(this.performSearchByQuery.bind(this));
+    }
+  }, {
     key: 'handleChange',
     value: function handleChange(event) {
       this.setState({ value: event.target.value });
@@ -28180,18 +28190,18 @@ var Search = function (_React$Component) {
   }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this3 = this;
-
       event.preventDefault();
       this.props.setResults([]);
       this.setState({
         searched: true,
         processing: true
       });
-      this.getSearchResults(this.state.value).then(function (results) {
-        _this3.props.setResults(results);
-        _this3.setState({ processing: false });
-      });
+      var query = _lodash2.default.trim(this.state.value);
+      if (query.length > 0) {
+        this.performSearchByQuery(query);
+      } else {
+        this.performSearchByDescription();
+      }
     }
   }, {
     key: 'clearSearch',

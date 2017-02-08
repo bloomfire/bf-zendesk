@@ -121,7 +121,7 @@ class Post extends React.Component {
           this.resetFormValues();
           const resource = capitalizeFirstLetter(data.contribution_type),
                 postURL = `https://rooms.bloomfire.ws/${data.contribution_type}s/${data.id}`,
-                message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}">${postURL}</a>`;
+                message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}" target="_blank">${postURL}</a>`;
           this.props.client.invoke('notify', message, 'notice');
         });
     }
