@@ -25,7 +25,7 @@
       "name": "bloomfire_api_key",
       "type": "text",
       "required": true,
-      "secure": true
+      "secure": false
     }
   ]
 }
