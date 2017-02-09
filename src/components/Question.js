@@ -6,7 +6,8 @@ import {
   getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter,
-  getSessionToken
+  getSessionToken,
+  showNewTicketMessage
 }  from '../utils';
 
 
@@ -52,9 +53,14 @@ class Question extends React.Component {
   }
 
   submitForm(userID) {
-    return getSessionToken(this.props.client)
-             .then(token => {
-               return fetch(`https://mashbox.bloomfire.biz/api/v2/questions?session_token=${token}`, _.merge({}, fetchOpts, {
+    return Promise.all([
+             getSessionToken(this.props.client),
+             this.props.client.metadata()
+           ])
+             .then(values => {
+               const token = values[0],
+                     domain = values[1].settings.bloomfire_domain;
+               return fetch(`https://${domain}/api/v2/questions?session_token=${token}`, _.merge({}, fetchOpts, {
                  method: 'POST',
                  body: getFormDataFromJSON({
                    author: userID,
@@ -67,13 +73,20 @@ class Question extends React.Component {
              });
   }
 
-  // POST /api/v2/questions/:id/ask_to_answer { "ask_to_answer_ids": [:membership_id1, :membership_id2] }
   submitAnswerers(questionID) {
     const answererIDs = this.state.answerers.map(answerer => answerer.id);
-    return fetch(`https://mashbox.bloomfire.biz/api/v2/questions/${questionID}/ask_to_answer`, _.merge({}, fetchOpts, {
-      method: 'POST',
-      body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
-    }));
+    return Promise.all([
+             getSessionToken(this.props.client),
+             this.props.client.metadata()
+           ])
+             .then(values => {
+               const token = values[0],
+                     domain = values[1].settings.bloomfire_domain;
+               return fetch(`https://${domain}/api/v2/questions/${questionID}/ask_to_answer?session_token=${token}`, _.merge({}, fetchOpts, {
+                 method: 'POST',
+                 body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
+               }));
+             });
   }
 
   handleChange(event) {
@@ -129,10 +142,7 @@ class Question extends React.Component {
             submitted: false
           }, this.hidePublished.bind(this));
           this.resetFormValues();
-          const resource = capitalizeFirstLetter(data.contribution_type),
-                postURL = `https://mashbox.bloomfire.biz/${data.contribution_type}s/${data.id}`,
-                message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}" target="_blank">${postURL}</a>`;
-          this.props.client.invoke('notify', message, 'notice');
+          showNewTicketMessage(this.props.client, data.contribution_type, data.id);
         });
     }
   }

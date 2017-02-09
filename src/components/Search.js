@@ -45,16 +45,25 @@ class Search extends React.Component {
              .then(data => _.trim(data['ticket.description']));
   }
 
+  // TODO: access second-level properties via Search API if possible (to avoid an individual request for every resource returned)
   getSearchResults(query) {
-    return getSessionToken(this.props.client)
-             .then(token => {
-               return fetch(`https://mashbox.bloomfire.biz/api/v2/search?query=${encodeURIComponent(query)}&session_token=${token}`, fetchOpts)
+    return Promise.all([
+             getSessionToken(this.props.client),
+             this.props.client.metadata()
+           ])
+             .then(values => {
+               const token = values[0],
+                     domain = values[1].settings.bloomfire_domain;
+               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&session_token=${token}`, fetchOpts)
                         .then(response => response.json())
                         .then(results => {
-                          const resourceURLs = results
-                                                 .filter(result => (result.type === 'post' || result.type === 'question'))
-                                                 .map(result => `https://mashbox.bloomfire.biz/api/v2/${result.type}s/${result.instance.id}`)
-                          return getResources(this.props.client, resourceURLs);
+                          const resourceArr = results
+                                                .filter(result => (result.type === 'post' || result.type === 'question'))
+                                                .map(result => ({
+                                                  type: result.type,
+                                                  id: result.instance.id
+                                                }));
+                          return getResources(this.props.client, resourceArr);
                         });
              });
   }

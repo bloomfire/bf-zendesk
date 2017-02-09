@@ -35,7 +35,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    console.log(3);
+    console.log(123);
   }
 
   componentDidMount() {
@@ -46,13 +46,18 @@ class App extends React.Component {
 
   // read linked resources from hidden ticket field and update state
   populateLinkedResources() {
-    getFromClientTicket(this.client, 'customField:custom_field_54394587')
-      .then(data => decodeLinkedResources(data['customField:custom_field_54394587']))
-      .then(resourceArr => resourceArr.map(getResourceAPIURL))
-      .then(getResources.bind(this, this.client))
-      .then(linkedResources => {
-        linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
-        this.setState({ linkedResources });
+    Promise.all([
+      getFromClientTicket(this.client, 'customField:custom_field_54394587'),
+      this.client.metadata()
+    ])
+      .then(values => {
+        const resourceArr = decodeLinkedResources(values[0]['customField:custom_field_54394587']),
+              domain = values[1].settings.bloomfire_domain;
+        getResources(this.client, resourceArr)
+          .then(linkedResources => {
+            linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
+            this.setState({ linkedResources });
+          });
       });
   }
 

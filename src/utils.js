@@ -7,17 +7,27 @@ const fetchOpts = {
   credentials: 'include'
 };
 
-// given a Bloomfire linked resource type and ID, return the URL for the resource
-const getResourceURL = (type, id) => `https://mashbox.bloomfire.biz/${type}s/${id}`;
 
-// given a Bloomfire linked resource type and ID, return the API URL for the resource
-const getResourceAPIURL = resourceObj => `https://mashbox.bloomfire.biz/api/v2/${resourceObj.type}s/${resourceObj.id}`;
+
+// given a Bloomfire linked resource domain, type and ID, return the URL for the resource
+const getResourceURL = (domain, type, id) => `https://${domain}/${type}s/${id}`;
+
+
+
+// given a Bloomfire linked resource domain, type and ID, return the API URL for the resource
+const getResourceAPIURL = (domain, type, id) => `https://${domain}/api/v2/${type}s/${id}`;
+
+
 
 // given a Bloomfire linked resource object, return a text representation
 const encodeLinkedResource = resourceObj => `${resourceObj.type}|${resourceObj.id}`;
 
+
+
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
 const encodeLinkedResources = resourceArr => resourceArr.map(encodeLinkedResource).join('\r\n');
+
+
 
 // given a text string of a Bloomfire linked resource, return a linked resource object
 const decodeLinkedResource = function (resourceTxt) {
@@ -28,8 +38,10 @@ const decodeLinkedResource = function (resourceTxt) {
   };
 };
 
+
+
 // given a text string containing Bloomfire linked resources, return an array of linked resource objects
-const decodeLinkedResources = function(resourcesTxt) {
+const decodeLinkedResources = function (resourcesTxt) {
   if (resourcesTxt.length > 0) {
     return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
   } else {
@@ -37,11 +49,18 @@ const decodeLinkedResources = function(resourcesTxt) {
   }
 }
 
+
+
 // given a Zendesk user's email
 const getBloomfireUserIDByEmail = function (client, email) {
-  return getSessionToken(client)
-           .then(token => {
-             return fetch(`https://mashbox.bloomfire.biz/api/v2/users?fields=email,id&session_token=${token}`, fetchOpts)
+  return Promise.all([
+           getSessionToken(client),
+           client.metadata()
+         ])
+           .then(function (values) {
+             const token = values[0],
+                   domain = values[1].settings.bloomfire_domain;
+             return fetch(`https://${domain}/api/v2/users?fields=email,id&session_token=${token}`, fetchOpts)
                       .then(response => response.json())
                       .then(users => {
                         return _.result(_.find(users, user => {
@@ -51,14 +70,23 @@ const getBloomfireUserIDByEmail = function (client, email) {
            });
 };
 
+
+
+//
 const getFormDataFromJSON = function (obj) {
   const formData = new FormData();
   Object.keys(obj).forEach(key => formData.append(key, obj[key]));
   return formData;
 };
 
+
+
+//
 const capitalizeFirstLetter = (str) => `${str.charAt(0).toUpperCase()}${str.slice(1)}`;
 
+
+
+//
 const trimResource = (resource) => ({
   id: resource.id,
   type: resource.contribution_type,
@@ -67,26 +95,40 @@ const trimResource = (resource) => ({
   display: true // set to display initially
 });
 
+
+
+//
 let sessionToken;
-const getSessionToken = function(client) {
+const getSessionToken = function (client) {
   if (sessionToken) {
     return Promise.resolve(sessionToken);
   } else {
-    return client.get('currentUser.email') // get current user's email via Zendesk client SDK
-      .then(data => data['currentUser.email']) // extract the returned property
-      .then(email => fetch(`https://mashbox.bloomfire.biz/api/v2/login?email=${encodeURIComponent(email)}&api_key=18aef5db45af3d1e72fd6030d1bef033f81aab72`))
-      .then(data => data.json())
-      .then(function(data) {
-        if (typeof sessionToken === 'undefined') {
-          sessionToken = data.session_token;
-        }
-        return data.session_token;
-      });
+    return Promise.all([
+             client
+               .get('currentUser.email') // get current user's email via Zendesk client SDK
+               .then(data => data['currentUser.email']), // extract the returned property
+             client.metadata()
+           ])
+             .then(function (values) {
+               const email = values[0],
+                     domain = values[1].settings.bloomfire_domain,
+                     key = values[1].settings.bloomfire_api_key;
+               return fetch(`https://${domain}/api/v2/login?email=${encodeURIComponent(email)}&api_key=${key}`)
+                        .then(data => data.json())
+                        .then(function (data) {
+                          if (typeof sessionToken === 'undefined') {
+                            sessionToken = data.session_token;
+                          }
+                          return data.session_token;
+                        });
+             });
   }
 };
 
-// convenience wrapper to this.client.get()
-const getFromClientTicket = function(client, ...paths) {
+
+
+// convenience wrapper to ZAF's client.get()
+const getFromClientTicket = function (client, ...paths) {
   paths = paths.map(path => `ticket.${path}`);
   return client.get(paths)
     .then(data => {
@@ -100,14 +142,36 @@ const getFromClientTicket = function(client, ...paths) {
     });
 };
 
+
+
 // given an array of Bloomfire resource API URLs, return a promise of response data
-const getResources = function (client, resourceURLs) {
-  const resourceReqs = resourceURLs.map(resourceURL => {
-    return getSessionToken(client)
-             .then(token => fetch(`${resourceURL}?session_token=${token}`, fetchOpts))
-             .then(response => response.json());
-  });
-  return Promise.all(resourceReqs);
+const getResources = function (client, resourceArr) {
+  return Promise.all([
+           getSessionToken(client),
+           client.metadata()
+         ])
+           .then(function (values) {
+             const token = values[0],
+                   domain = values[1].settings.bloomfire_domain,
+                   resourceReqs = resourceArr.map(function (resource) {
+                     return fetch(`${getResourceAPIURL(domain, resource.type, resource.id)}?session_token=${token}`, fetchOpts)
+                              .then(response => response.json());
+                   });
+             return Promise.all(resourceReqs);
+           });
+};
+
+
+
+//
+const showNewTicketMessage = function (client, type, id) {
+  client.metadata()
+    .then(metadata => {
+      const resource = capitalizeFirstLetter(type),
+            postURL = `https://${metadata.settings.bloomfire_domain}/${type}s/${id}`,
+            message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}" target="_blank">${postURL}</a>`;
+      client.invoke('notify', message, 'notice');
+    });
 };
 
 
@@ -126,5 +190,6 @@ export {
   capitalizeFirstLetter,
   trimResource,
   getSessionToken,
-  getFromClientTicket
+  getFromClientTicket,
+  showNewTicketMessage
 };
