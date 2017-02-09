@@ -11,7 +11,9 @@ import {
   getResourceAPIURL,
   encodeLinkedResources,
   decodeLinkedResources,
-  trimResource
+  trimResource,
+  getSessionToken,
+  getFromClientTicket
 } from '../utils';
 
 
@@ -44,10 +46,10 @@ class App extends React.Component {
 
   // read linked resources from hidden ticket field and update state
   populateLinkedResources() {
-    this.getFromTicket('customField:custom_field_54394587')
+    getFromClientTicket(this.client, 'customField:custom_field_54394587')
       .then(data => decodeLinkedResources(data['customField:custom_field_54394587']))
       .then(resourceArr => resourceArr.map(getResourceAPIURL))
-      .then(getResources)
+      .then(getResources.bind(this, this.client))
       .then(linkedResources => {
         linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
         this.setState({ linkedResources });
@@ -73,12 +75,12 @@ class App extends React.Component {
   }
 
   getZendeskTicket() {
-    return this.getFromTicket('id')
+    return getFromClientTicket(this.client, 'id')
              .then(data => this.client.request(`/api/v2/tickets/${data.id}.json`));
   };
 
   updateZendeskTicketCustomField(value) {
-    return this.getFromTicket('id')
+    return getFromClientTicket(this.client, 'id')
              .then(data => {
                return this.client.request({
                  url: `/api/v2/tickets/${data.id}.json`,
@@ -162,21 +164,6 @@ class App extends React.Component {
         this.setSearchResultDisplay(resourceObj.id, true);
       });
   };
-
-  // convenience wrapper to this.client.get()
-  getFromTicket(...paths) {
-    paths = paths.map(path => `ticket.${path}`);
-    return this.client.get(paths)
-      .then(data => {
-        let obj = {};
-        for (let key in data) {
-          if (key !== 'errors') { // discard errors object
-            obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
-          }
-        }
-        return obj;
-      });
-  }
 
   resize() {
     if (this.node) { // if this component exists in the DOM, resize it

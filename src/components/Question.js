@@ -5,7 +5,8 @@ import {
   fetchOpts,
   getBloomfireUserIDByEmail,
   getFormDataFromJSON,
-  capitalizeFirstLetter
+  capitalizeFirstLetter,
+  getSessionToken
 }  from '../utils';
 
 
@@ -51,22 +52,25 @@ class Question extends React.Component {
   }
 
   submitForm(userID) {
-    return fetch('https://rooms.bloomfire.ws/api/v2/questions', _.merge({}, fetchOpts, {
-      method: 'POST',
-      body: getFormDataFromJSON({
-        author: userID,
-        question: this.state.question,
-        explanation: this.state.explanation,
-        published: true,
-        public: false
-      })
-    }));
+    return getSessionToken(this.props.client)
+             .then(token => {
+               return fetch(`https://mashbox.bloomfire.biz/api/v2/questions?session_token=${token}`, _.merge({}, fetchOpts, {
+                 method: 'POST',
+                 body: getFormDataFromJSON({
+                   author: userID,
+                   question: this.state.question,
+                   explanation: this.state.explanation,
+                   published: true,
+                   public: false
+                 })
+               }));
+             });
   }
 
   // POST /api/v2/questions/:id/ask_to_answer { "ask_to_answer_ids": [:membership_id1, :membership_id2] }
   submitAnswerers(questionID) {
     const answererIDs = this.state.answerers.map(answerer => answerer.id);
-    return fetch(`https://rooms.bloomfire.ws/api/v2/questions/${questionID}/ask_to_answer`, _.merge({}, fetchOpts, {
+    return fetch(`https://mashbox.bloomfire.biz/api/v2/questions/${questionID}/ask_to_answer`, _.merge({}, fetchOpts, {
       method: 'POST',
       body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
     }));
@@ -98,7 +102,7 @@ class Question extends React.Component {
       this.setState({ processing: true });
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIDByEmail) // look up current user's email via Bloomfire API
+        .then(getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(response => response.json()) // extract JSON from response
         .then(data => { // submit answerers, if needed, or just return response data again immediately
@@ -126,7 +130,7 @@ class Question extends React.Component {
           }, this.hidePublished.bind(this));
           this.resetFormValues();
           const resource = capitalizeFirstLetter(data.contribution_type),
-                postURL = `https://rooms.bloomfire.ws/${data.contribution_type}s/${data.id}`,
+                postURL = `https://mashbox.bloomfire.biz/${data.contribution_type}s/${data.id}`,
                 message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}" target="_blank">${postURL}</a>`;
           this.props.client.invoke('notify', message, 'notice');
         });

@@ -3510,7 +3510,7 @@ module.exports = SyntheticUIEvent;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
+exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
 
 var _lodash = __webpack_require__(28);
 
@@ -3523,24 +3523,14 @@ var fetchOpts = {
   credentials: 'include'
 };
 
-// given an array of Bloomfire resource API URLs, return a promise of response data
-var getResources = function getResources(resourceURLs) {
-  var resourceReqs = resourceURLs.map(function (resourceURL) {
-    return fetch(resourceURL, fetchOpts).then(function (response) {
-      return response.json();
-    });
-  });
-  return Promise.all(resourceReqs);
-};
-
 // given a Bloomfire linked resource type and ID, return the URL for the resource
 var getResourceURL = function getResourceURL(type, id) {
-  return 'https://rooms.bloomfire.ws/' + type + 's/' + id;
+  return 'https://mashbox.bloomfire.biz/' + type + 's/' + id;
 };
 
 // given a Bloomfire linked resource type and ID, return the API URL for the resource
 var getResourceAPIURL = function getResourceAPIURL(resourceObj) {
-  return 'https://rooms.bloomfire.ws/api/v2/' + resourceObj.type + 's/' + resourceObj.id;
+  return 'https://mashbox.bloomfire.biz/api/v2/' + resourceObj.type + 's/' + resourceObj.id;
 };
 
 // given a Bloomfire linked resource object, return a text representation
@@ -3572,13 +3562,15 @@ var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
 };
 
 // given a Zendesk user's email
-var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(email) {
-  return fetch('https://rooms.bloomfire.ws/api/v2/users?fields=email,id', fetchOpts).then(function (response) {
-    return response.json();
-  }).then(function (users) {
-    return _lodash2.default.result(_lodash2.default.find(users, function (user) {
-      return user.email === email;
-    }), 'id');
+var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email) {
+  return getSessionToken(client).then(function (token) {
+    return fetch('https://mashbox.bloomfire.biz/api/v2/users?fields=email,id&session_token=' + token, fetchOpts).then(function (response) {
+      return response.json();
+    }).then(function (users) {
+      return _lodash2.default.result(_lodash2.default.find(users, function (user) {
+        return user.email === email;
+      }), 'id');
+    });
   });
 };
 
@@ -3604,6 +3596,61 @@ var trimResource = function trimResource(resource) {
   };
 };
 
+var sessionToken = void 0;
+var getSessionToken = function getSessionToken(client) {
+  if (sessionToken) {
+    return Promise.resolve(sessionToken);
+  } else {
+    return client.get('currentUser.email') // get current user's email via Zendesk client SDK
+    .then(function (data) {
+      return data['currentUser.email'];
+    }) // extract the returned property
+    .then(function (email) {
+      return fetch('https://mashbox.bloomfire.biz/api/v2/login?email=' + encodeURIComponent(email) + '&api_key=18aef5db45af3d1e72fd6030d1bef033f81aab72');
+    }).then(function (data) {
+      return data.json();
+    }).then(function (data) {
+      if (typeof sessionToken === 'undefined') {
+        sessionToken = data.session_token;
+      }
+      return data.session_token;
+    });
+  }
+};
+
+// convenience wrapper to this.client.get()
+var getFromClientTicket = function getFromClientTicket(client) {
+  for (var _len = arguments.length, paths = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    paths[_key - 1] = arguments[_key];
+  }
+
+  paths = paths.map(function (path) {
+    return 'ticket.' + path;
+  });
+  return client.get(paths).then(function (data) {
+    var obj = {};
+    for (var key in data) {
+      if (key !== 'errors') {
+        // discard errors object
+        obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+      }
+    }
+    return obj;
+  });
+};
+
+// given an array of Bloomfire resource API URLs, return a promise of response data
+var getResources = function getResources(client, resourceURLs) {
+  var resourceReqs = resourceURLs.map(function (resourceURL) {
+    return getSessionToken(client).then(function (token) {
+      return fetch(resourceURL + '?session_token=' + token, fetchOpts);
+    }).then(function (response) {
+      return response.json();
+    });
+  });
+  return Promise.all(resourceReqs);
+};
+
 exports.fetchOpts = fetchOpts;
 exports.getResources = getResources;
 exports.getResourceURL = getResourceURL;
@@ -3616,6 +3663,8 @@ exports.getBloomfireUserIDByEmail = getBloomfireUserIDByEmail;
 exports.getFormDataFromJSON = getFormDataFromJSON;
 exports.capitalizeFirstLetter = capitalizeFirstLetter;
 exports.trimResource = trimResource;
+exports.getSessionToken = getSessionToken;
+exports.getFromClientTicket = getFromClientTicket;
 
 /***/ }),
 /* 28 */
@@ -24116,7 +24165,7 @@ var LinkList = function (_React$Component) {
             type: link.contribution_type
           });
           return _react2.default.createElement(_Link2.default, { key: link.id,
-            href: 'https://rooms.bloomfire.ws/' + link.type + 's/' + link.id,
+            href: 'https://mashbox.bloomfire.biz/' + link.type + 's/' + link.id,
             title: link.title,
             'public': link.public,
             includeBrokenLink: _this2.props.includeBrokenLink,
@@ -26929,11 +26978,11 @@ var App = function (_React$Component) {
     value: function populateLinkedResources() {
       var _this2 = this;
 
-      this.getFromTicket('customField:custom_field_54394587').then(function (data) {
+      (0, _utils.getFromClientTicket)(this.client, 'customField:custom_field_54394587').then(function (data) {
         return (0, _utils.decodeLinkedResources)(data['customField:custom_field_54394587']);
       }).then(function (resourceArr) {
         return resourceArr.map(_utils.getResourceAPIURL);
-      }).then(_utils.getResources).then(function (linkedResources) {
+      }).then(_utils.getResources.bind(this, this.client)).then(function (linkedResources) {
         linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
         _this2.setState({ linkedResources: linkedResources });
       });
@@ -26965,7 +27014,7 @@ var App = function (_React$Component) {
     value: function getZendeskTicket() {
       var _this4 = this;
 
-      return this.getFromTicket('id').then(function (data) {
+      return (0, _utils.getFromClientTicket)(this.client, 'id').then(function (data) {
         return _this4.client.request('/api/v2/tickets/' + data.id + '.json');
       });
     }
@@ -26974,7 +27023,7 @@ var App = function (_React$Component) {
     value: function updateZendeskTicketCustomField(value) {
       var _this5 = this;
 
-      return this.getFromTicket('id').then(function (data) {
+      return (0, _utils.getFromClientTicket)(this.client, 'id').then(function (data) {
         return _this5.client.request({
           url: '/api/v2/tickets/' + data.id + '.json',
           type: 'PUT',
@@ -27076,30 +27125,6 @@ var App = function (_React$Component) {
         }); // remove the pertinent linekd resource from the UI
         _this7.setState({ linkedResources: linkedResources });
         _this7.setSearchResultDisplay(resourceObj.id, true);
-      });
-    }
-  }, {
-    key: 'getFromTicket',
-
-
-    // convenience wrapper to this.client.get()
-    value: function getFromTicket() {
-      for (var _len = arguments.length, paths = Array(_len), _key = 0; _key < _len; _key++) {
-        paths[_key] = arguments[_key];
-      }
-
-      paths = paths.map(function (path) {
-        return 'ticket.' + path;
-      });
-      return this.client.get(paths).then(function (data) {
-        var obj = {};
-        for (var key in data) {
-          if (key !== 'errors') {
-            // discard errors object
-            obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
-          }
-        }
-        return obj;
       });
     }
   }, {
@@ -27676,33 +27701,37 @@ var Post = function (_React$Component) {
   }, {
     key: 'submitForm',
     value: function submitForm(userID) {
-      return fetch('https://rooms.bloomfire.ws/api/v2/posts', _lodash2.default.merge({}, _utils.fetchOpts, {
-        method: 'POST',
-        body: (0, _utils.getFormDataFromJSON)({
-          author: userID,
-          title: this.state.title,
-          description: this.state.description,
-          post_body: this.state.body,
-          published: true,
-          public: false
-        })
-      }));
+      var _this2 = this;
+
+      return (0, _utils.getSessionToken)(this.props.client).then(function (token) {
+        return fetch('https://mashbox.bloomfire.biz/api/v2/posts?session_token=' + token, _lodash2.default.merge({}, _utils.fetchOpts, {
+          method: 'POST',
+          body: (0, _utils.getFormDataFromJSON)({
+            author: userID,
+            title: _this2.state.title,
+            description: _this2.state.description,
+            post_body: _this2.state.body,
+            published: true,
+            public: false
+          })
+        }));
+      });
     }
   }, {
     key: 'handleChange',
     value: function handleChange(event) {
-      var _this2 = this;
+      var _this3 = this;
 
       var target = event.target,
           // shortcut
       value = target.type === 'checkbox' ? target.checked : target.value,
           name = target.name;
       this.setState(_defineProperty({}, name, value), function () {
-        if (_this2.state.submitted) {
+        if (_this3.state.submitted) {
           if (name === 'title') {
-            _this2.validateTitle();
+            _this3.validateTitle();
           } else if (name === 'body') {
-            _this2.validateBody();
+            _this3.validateBody();
           }
         }
       });
@@ -27710,16 +27739,16 @@ var Post = function (_React$Component) {
   }, {
     key: 'hidePublished',
     value: function hidePublished() {
-      var _this3 = this;
+      var _this4 = this;
 
       setTimeout(function () {
-        _this3.setState({ published: false });
+        _this4.setState({ published: false });
       }, 2000);
     }
   }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this4 = this;
+      var _this5 = this;
 
       event.preventDefault();
       this.setState({ submitted: true });
@@ -27729,31 +27758,31 @@ var Post = function (_React$Component) {
         .then(function (data) {
           return data['currentUser.email'];
         }) // extract the returned property
-        .then(_utils.getBloomfireUserIDByEmail) // look up current user's email via Bloomfire API
+        .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(function (response) {
           return response.json();
         }) // extract JSON from response
         .then(function (data) {
-          if (_this4.state.linkToTicket) {
-            _this4.props.createLinkedResource({
+          if (_this5.state.linkToTicket) {
+            _this5.props.createLinkedResource({
               display: true,
               id: data.id,
               public: false,
-              title: _this4.state.title,
+              title: _this5.state.title,
               type: data.contribution_type
             });
           }
-          _this4.setState({
+          _this5.setState({
             processing: false,
             published: true,
             submitted: false
-          }, _this4.hidePublished.bind(_this4));
-          _this4.resetFormValues();
+          }, _this5.hidePublished.bind(_this5));
+          _this5.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
-              postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
+              postURL = 'https://mashbox.bloomfire.biz/' + data.contribution_type + 's/' + data.id,
               message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
-          _this4.props.client.invoke('notify', message, 'notice');
+          _this5.props.client.invoke('notify', message, 'notice');
         });
       }
     }
@@ -27902,16 +27931,20 @@ var Question = function (_React$Component) {
   }, {
     key: 'submitForm',
     value: function submitForm(userID) {
-      return fetch('https://rooms.bloomfire.ws/api/v2/questions', _lodash2.default.merge({}, _utils.fetchOpts, {
-        method: 'POST',
-        body: (0, _utils.getFormDataFromJSON)({
-          author: userID,
-          question: this.state.question,
-          explanation: this.state.explanation,
-          published: true,
-          public: false
-        })
-      }));
+      var _this2 = this;
+
+      return (0, _utils.getSessionToken)(this.props.client).then(function (token) {
+        return fetch('https://mashbox.bloomfire.biz/api/v2/questions?session_token=' + token, _lodash2.default.merge({}, _utils.fetchOpts, {
+          method: 'POST',
+          body: (0, _utils.getFormDataFromJSON)({
+            author: userID,
+            question: _this2.state.question,
+            explanation: _this2.state.explanation,
+            published: true,
+            public: false
+          })
+        }));
+      });
     }
 
     // POST /api/v2/questions/:id/ask_to_answer { "ask_to_answer_ids": [:membership_id1, :membership_id2] }
@@ -27922,7 +27955,7 @@ var Question = function (_React$Component) {
       var answererIDs = this.state.answerers.map(function (answerer) {
         return answerer.id;
       });
-      return fetch('https://rooms.bloomfire.ws/api/v2/questions/' + questionID + '/ask_to_answer', _lodash2.default.merge({}, _utils.fetchOpts, {
+      return fetch('https://mashbox.bloomfire.biz/api/v2/questions/' + questionID + '/ask_to_answer', _lodash2.default.merge({}, _utils.fetchOpts, {
         method: 'POST',
         body: (0, _utils.getFormDataFromJSON)({ ask_to_answer_ids: answererIDs })
       }));
@@ -27930,16 +27963,16 @@ var Question = function (_React$Component) {
   }, {
     key: 'handleChange',
     value: function handleChange(event) {
-      var _this2 = this;
+      var _this3 = this;
 
       var target = event.target,
           // shortcut
       value = target.type === 'checkbox' ? target.checked : target.value,
           name = target.name;
       this.setState(_defineProperty({}, name, value), function () {
-        if (_this2.state.submitted) {
+        if (_this3.state.submitted) {
           if (name === 'question') {
-            _this2.validateQuestion();
+            _this3.validateQuestion();
           }
         }
       });
@@ -27947,16 +27980,16 @@ var Question = function (_React$Component) {
   }, {
     key: 'hidePublished',
     value: function hidePublished() {
-      var _this3 = this;
+      var _this4 = this;
 
       setTimeout(function () {
-        _this3.setState({ published: false });
+        _this4.setState({ published: false });
       }, 2000);
     }
   }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this4 = this;
+      var _this5 = this;
 
       event.preventDefault();
       this.setState({ submitted: true });
@@ -27966,40 +27999,40 @@ var Question = function (_React$Component) {
         .then(function (data) {
           return data['currentUser.email'];
         }) // extract the returned property
-        .then(_utils.getBloomfireUserIDByEmail) // look up current user's email via Bloomfire API
+        .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(function (response) {
           return response.json();
         }) // extract JSON from response
         .then(function (data) {
           // submit answerers, if needed, or just return response data again immediately
-          if (_this4.state.answerers.length > 0) {
-            return _this4.submitAnswerers(data.id).then(function (response) {
+          if (_this5.state.answerers.length > 0) {
+            return _this5.submitAnswerers(data.id).then(function (response) {
               return response.json();
             });
           } else {
             return data;
           }
         }).then(function (data) {
-          if (_this4.state.linkToTicket) {
-            _this4.props.createLinkedResource({
+          if (_this5.state.linkToTicket) {
+            _this5.props.createLinkedResource({
               display: true,
               id: data.id,
               public: false,
-              title: _this4.state.question,
+              title: _this5.state.question,
               type: data.contribution_type
             });
           }
-          _this4.setState({
+          _this5.setState({
             processing: false,
             published: true,
             submitted: false
-          }, _this4.hidePublished.bind(_this4));
-          _this4.resetFormValues();
+          }, _this5.hidePublished.bind(_this5));
+          _this5.resetFormValues();
           var resource = (0, _utils.capitalizeFirstLetter)(data.contribution_type),
-              postURL = 'https://rooms.bloomfire.ws/' + data.contribution_type + 's/' + data.id,
+              postURL = 'https://mashbox.bloomfire.biz/' + data.contribution_type + 's/' + data.id,
               message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
-          _this4.props.client.invoke('notify', message, 'notice');
+          _this5.props.client.invoke('notify', message, 'notice');
         });
       }
     }
@@ -28146,15 +28179,19 @@ var Search = function (_React$Component) {
   }, {
     key: 'getSearchResults',
     value: function getSearchResults(query) {
-      return fetch('https://rooms.bloomfire.ws/api/v2/search?query=' + encodeURIComponent(query), _utils.fetchOpts).then(function (response) {
-        return response.json();
-      }).then(function (results) {
-        var resourceURLs = results.filter(function (result) {
-          return result.type === 'post' || result.type === 'question';
-        }).map(function (result) {
-          return 'https://rooms.bloomfire.ws/api/v2/' + result.type + 's/' + result.instance.id;
+      var _this2 = this;
+
+      return (0, _utils.getSessionToken)(this.props.client).then(function (token) {
+        return fetch('https://mashbox.bloomfire.biz/api/v2/search?query=' + encodeURIComponent(query) + '&session_token=' + token, _utils.fetchOpts).then(function (response) {
+          return response.json();
+        }).then(function (results) {
+          var resourceURLs = results.filter(function (result) {
+            return result.type === 'post' || result.type === 'question';
+          }).map(function (result) {
+            return 'https://mashbox.bloomfire.biz/api/v2/' + result.type + 's/' + result.instance.id;
+          });
+          return (0, _utils.getResources)(_this2.props.client, resourceURLs);
         });
-        return (0, _utils.getResources)(resourceURLs);
       });
     }
   }, {
@@ -28166,15 +28203,15 @@ var Search = function (_React$Component) {
   }, {
     key: 'performSearchByQuery',
     value: function performSearchByQuery(query) {
-      var _this2 = this;
+      var _this3 = this;
 
       this.getSearchResults(query).then(function (results) {
         results = _lodash2.default.filter(results, function (result) {
           return result.published;
         }); // remove unpublished results
         results = results.map(_utils.trimResource); // remove unnecessary properties
-        _this2.props.setResults(results);
-        _this2.setState({ processing: false });
+        _this3.props.setResults(results);
+        _this3.setState({ processing: false });
       });
     }
   }, {

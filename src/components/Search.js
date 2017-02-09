@@ -4,7 +4,8 @@ import _ from 'lodash';
 import {
   fetchOpts,
   getResources,
-  trimResource
+  trimResource,
+  getSessionToken
 }  from '../utils';
 
 // components
@@ -45,13 +46,16 @@ class Search extends React.Component {
   }
 
   getSearchResults(query) {
-    return fetch(`https://rooms.bloomfire.ws/api/v2/search?query=${encodeURIComponent(query)}`, fetchOpts)
-             .then(response => response.json())
-             .then(results => {
-               const resourceURLs = results
-                                      .filter(result => (result.type === 'post' || result.type === 'question'))
-                                      .map(result => `https://rooms.bloomfire.ws/api/v2/${result.type}s/${result.instance.id}`)
-               return getResources(resourceURLs);
+    return getSessionToken(this.props.client)
+             .then(token => {
+               return fetch(`https://mashbox.bloomfire.biz/api/v2/search?query=${encodeURIComponent(query)}&session_token=${token}`, fetchOpts)
+                        .then(response => response.json())
+                        .then(results => {
+                          const resourceURLs = results
+                                                 .filter(result => (result.type === 'post' || result.type === 'question'))
+                                                 .map(result => `https://mashbox.bloomfire.biz/api/v2/${result.type}s/${result.instance.id}`)
+                          return getResources(this.props.client, resourceURLs);
+                        });
              });
   }
 
