@@ -176,7 +176,17 @@ const showNewTicketMessage = function (client, type, id) {
 
 
 
+// build and append href values to resources
+const addHrefs = function (domain, resourceArr) {
+  resourceArr.forEach(function(resourceObj) {
+    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
+  });
+};
+
+
+
 export {
+  addHrefs,
   fetchOpts,
   getResources,
   getResourceURL,

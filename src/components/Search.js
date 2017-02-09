@@ -5,7 +5,9 @@ import {
   fetchOpts,
   getResources,
   trimResource,
-  getSessionToken
+  getSessionToken,
+  getResourceURL,
+  addHrefs
 }  from '../utils';
 
 // components
@@ -74,11 +76,16 @@ class Search extends React.Component {
   }
 
   performSearchByQuery(query) {
-    this
-      .getSearchResults(query)
-      .then(results => {
+    Promise.all([
+      this.getSearchResults(query),
+      this.props.client.metadata()
+    ])
+      .then(values => {
+        let results = values[0];
+        const domain = values[1].settings.bloomfire_domain;
         results = _.filter(results, result => result.published); // remove unpublished results
         results = results.map(trimResource); // remove unnecessary properties
+        addHrefs(domain, results);
         this.props.setResults(results);
         this.setState({ processing: false });
       });

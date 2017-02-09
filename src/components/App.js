@@ -6,6 +6,7 @@ import Search from './Search';
 import LinkedResources from './LinkedResources';
 import AddContent from './AddContent';
 import {
+  addHrefs,
   getResources,
   getResourceURL,
   getResourceAPIURL,
@@ -35,7 +36,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    console.log(123);
+    console.log(456);
   }
 
   componentDidMount() {
@@ -56,6 +57,7 @@ class App extends React.Component {
         getResources(this.client, resourceArr)
           .then(linkedResources => {
             linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
+            addHrefs(domain, linkedResources);
             this.setState({ linkedResources });
           });
       });
@@ -130,24 +132,29 @@ class App extends React.Component {
 
   //
   createLinkedResource(resourceObj) {
-    this.getZendeskTicket()
-      .then(data => {
-        let resourceArr = this.getResourceArr(data);
+    Promise.all([
+      this.getZendeskTicket(),
+      this.client.metadata()
+    ])
+      .then(values => {
+        const ticketData = values[0],
+              domain = values[1].settings.bloomfire_domain,
+              linkedResources = [...this.state.linkedResources, {
+                display: true,
+                href: getResourceURL(domain, resourceObj.type, resourceObj.id),
+                id: resourceObj.id,
+                public: false,
+                title: resourceObj.title,
+                type: resourceObj.type,
+              }];
+        let resourceArr = this.getResourceArr(ticketData);
         resourceArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr));
-      }).then(data => {
-        const linkedResources = [...this.state.linkedResources, {
-          display: true,
-          id: resourceObj.id,
-          public: false,
-          title: resourceObj.title,
-          type: resourceObj.type
-        }];
+        this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr));
         this.setState({ linkedResources });
-      });
+      })
   };
 
   //

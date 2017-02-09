@@ -3510,7 +3510,7 @@ module.exports = SyntheticUIEvent;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = undefined;
+exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = undefined;
 
 var _lodash = __webpack_require__(28);
 
@@ -3672,6 +3672,14 @@ var showNewTicketMessage = function showNewTicketMessage(client, type, id) {
   });
 };
 
+// build and append href values to resources
+var addHrefs = function addHrefs(domain, resourceArr) {
+  resourceArr.forEach(function (resourceObj) {
+    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
+  });
+};
+
+exports.addHrefs = addHrefs;
 exports.fetchOpts = fetchOpts;
 exports.getResources = getResources;
 exports.getResourceURL = getResourceURL;
@@ -24187,7 +24195,7 @@ var LinkList = function (_React$Component) {
             type: link.contribution_type
           });
           return _react2.default.createElement(_Link2.default, { key: link.id,
-            href: 'https://mashbox.bloomfire.biz/' + link.type + 's/' + link.id,
+            href: link.href,
             title: link.title,
             'public': link.public,
             includeBrokenLink: _this2.props.includeBrokenLink,
@@ -26981,7 +26989,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    console.log(123);
+    console.log(456);
     return _this;
   }
 
@@ -27005,6 +27013,7 @@ var App = function (_React$Component) {
             domain = values[1].settings.bloomfire_domain;
         (0, _utils.getResources)(_this2.client, resourceArr).then(function (linkedResources) {
           linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
+          (0, _utils.addHrefs)(domain, linkedResources);
           _this2.setState({ linkedResources: linkedResources });
         });
       });
@@ -27099,21 +27108,23 @@ var App = function (_React$Component) {
     value: function createLinkedResource(resourceObj) {
       var _this6 = this;
 
-      this.getZendeskTicket().then(function (data) {
-        var resourceArr = _this6.getResourceArr(data);
-        resourceArr.push({
-          type: resourceObj.type,
-          id: resourceObj.id
-        });
-        return _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr));
-      }).then(function (data) {
-        var linkedResources = [].concat(_toConsumableArray(_this6.state.linkedResources), [{
+      Promise.all([this.getZendeskTicket(), this.client.metadata()]).then(function (values) {
+        var ticketData = values[0],
+            domain = values[1].settings.bloomfire_domain,
+            linkedResources = [].concat(_toConsumableArray(_this6.state.linkedResources), [{
           display: true,
+          href: (0, _utils.getResourceURL)(domain, resourceObj.type, resourceObj.id),
           id: resourceObj.id,
           public: false,
           title: resourceObj.title,
           type: resourceObj.type
         }]);
+        var resourceArr = _this6.getResourceArr(ticketData);
+        resourceArr.push({
+          type: resourceObj.type,
+          id: resourceObj.id
+        });
+        _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr));
         _this6.setState({ linkedResources: linkedResources });
       });
     }
@@ -28234,11 +28245,14 @@ var Search = function (_React$Component) {
     value: function performSearchByQuery(query) {
       var _this3 = this;
 
-      this.getSearchResults(query).then(function (results) {
+      Promise.all([this.getSearchResults(query), this.props.client.metadata()]).then(function (values) {
+        var results = values[0];
+        var domain = values[1].settings.bloomfire_domain;
         results = _lodash2.default.filter(results, function (result) {
           return result.published;
         }); // remove unpublished results
         results = results.map(_utils.trimResource); // remove unnecessary properties
+        (0, _utils.addHrefs)(domain, results);
         _this3.props.setResults(results);
         _this3.setState({ processing: false });
       });
