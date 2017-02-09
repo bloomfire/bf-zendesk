@@ -26989,7 +26989,11 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
+    // logging (for development)
     console.log(456);
+    _this.client.get('requirement:bloomfire_linked_resources').then(function (data) {
+      console.dir(data);
+    });
     return _this;
   }
 

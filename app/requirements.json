@@ -3,7 +3,7 @@
     "bloomfire_linked_resources": {
       "type": "textarea",
       "title": "Bloomfire Linked Resources",
-      "description": "Stores IDs of linked resources in your organization's Bloomfire account.",
+      "description": "Stores data about linked resources from your organization's Bloomfire account.",
       "active": true,
       "required": false,
       "visible_in_portal": false

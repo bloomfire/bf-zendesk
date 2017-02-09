@@ -36,7 +36,11 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
+    // logging (for development)
     console.log(456);
+    this.client.get('requirement:bloomfire_linked_resources').then(function(data) {
+      console.dir(data);
+    });
   }
 
   componentDidMount() {
