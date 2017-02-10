@@ -48,7 +48,7 @@ class AddContent extends React.Component {
     );
     return (
       <section className={classNameSection}>
-        <h2>Add content to Bloomfire</h2>
+        <h2 onClick={this.toggleCollapsed}>Add content to Bloomfire</h2>
         <CaretIcon handleClick={this.toggleCollapsed}/>
         <div className="section-content">
           <Tabs handleClick={this.switchTab}

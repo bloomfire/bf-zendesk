@@ -55,7 +55,7 @@ class LinkedResources extends React.Component {
     }
     return (
       <section className={classNameSection}>
-        <h2>Linked Resources</h2>
+        <h2 onClick={this.toggleCollapsed}>Linked Resources</h2>
         <CaretIcon handleClick={this.toggleCollapsed}/>
         <div className="section-content">
           <div className="content-box">
