@@ -182,7 +182,7 @@ class App extends React.Component {
         this.lastHeight = currentHeight;
         this.client.invoke('resize', {
           width: '100%',
-          height: `${currentHeight}px`
+          height: `${currentHeight + 1}px` // add 1px to make Firefox happy
         });
         clearInterval(this.resizeInterval);
       }
