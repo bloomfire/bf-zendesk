@@ -12,10 +12,15 @@ To begin development:
 
 1. From the repo root, run `npm run dev` to start Webpack in watch mode.
 1. In another terminal window (also from the repo root), run `npm run server` to start the Zendesk App Tools development server. If desired, you can instead run just `zat server` from the `app/` directory if you want to provide different app settings than the defaults in `app/settings.json` (the `zat` CLI will prompt you for individual values).
-1. Open a Chrome tab and navigate to a Zendesk ticket; e.g.: [https://mashbox.zendesk.com/agent/tickets/1?zat=true]
+1. Open a Chrome tab and navigate to a Zendesk ticket ([this one](https://mashbox.zendesk.com/agent/tickets/1?zat=true), for example).
 1. Click the shield icon at the right of Chrome's address bar. In the popup that appears, click the "Load unsafe scripts" button.
 
 When the page reloads, you should see the app in the right column. The page is still hosted by Zendesk, but the app's iframe is served locally. Changes to the source code will automatically generate new output files (via Webpack), but you will need to refresh the Chrome tab manually to see those updates.
+
+## Notes
+
+* The `/app` directory is the root directory for the app as far as Zendesk is concerned. For example, the [ZAF CLI](https://developer.zendesk.com/apps/docs/apps-v2/getting_started#zendesk-app-tools) commands won't work in the root directory of this repo; they need to be run from `/app`.
+* Packaging the app with [`zat package`](https://developer.zendesk.com/apps/docs/apps-v2/getting_started#package) will create a new ZIP file in `/app/tmp`. Currently, these are checked in to git to keep a rudimentary revision history, but it may be wise to `.gitignore` them if that doesn't prove to come in handy.
 
 ## Troubleshooting
 
