@@ -14,7 +14,9 @@ import {
   decodeLinkedResources,
   trimResource,
   getSessionToken,
-  getFromClientTicket
+  getFromClientTicket,
+  getCustomFieldID,
+  getResourcesTxtFromCustomField
 } from '../utils';
 
 
@@ -36,11 +38,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    // logging (for development)
-    console.log(456);
-    this.client.get('requirement:bloomfire_linked_resources').then(function(data) {
-      console.dir(data);
-    });
+    // console.log(1); // DEV ONLY: ensure that latest app code is still loading
   }
 
   componentDidMount() {
@@ -52,13 +50,13 @@ class App extends React.Component {
   // read linked resources from hidden ticket field and update state
   populateLinkedResources() {
     Promise.all([
-      getFromClientTicket(this.client, 'customField:custom_field_54394587'),
+      getResourcesTxtFromCustomField(this.client, false),
       this.client.metadata()
     ])
       .then(values => {
-        const resourceArr = decodeLinkedResources(values[0]['customField:custom_field_54394587']),
+        const resourcesArr = decodeLinkedResources(values[0]),
               domain = values[1].settings.bloomfire_domain;
-        getResources(this.client, resourceArr)
+        getResources(this.client, resourcesArr)
           .then(linkedResources => {
             linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
             addHrefs(domain, linkedResources);
@@ -85,16 +83,16 @@ class App extends React.Component {
     return searchResults;
   }
 
-  getZendeskTicket() {
-    return getFromClientTicket(this.client, 'id')
-             .then(data => this.client.request(`/api/v2/tickets/${data.id}.json`));
-  };
-
   updateZendeskTicketCustomField(value) {
-    return getFromClientTicket(this.client, 'id')
-             .then(data => {
-               return this.client.request({
-                 url: `/api/v2/tickets/${data.id}.json`,
+    return Promise.all([
+      getCustomFieldID(this.client),
+      getFromClientTicket(this.client, 'id')
+    ])
+      .then(values => {
+        const customFieldID = values[0],
+              ticketID = values[1].id;
+        return this.client.request({
+                 url: `/api/v2/tickets/${ticketID}.json`,
                  type: 'PUT',
                  dataType: 'json',
                  contentType: 'application/json',
@@ -102,21 +100,19 @@ class App extends React.Component {
                    ticket: {
                      custom_fields: [
                        {
-                         id: 54394587, // TODO: make dynamic
+                         id: customFieldID,
                          value
                        }
                      ]
                    }
                  })
                });
-             });
+      });
   }
 
-  getResourceArr(data) {
-    const resourceTxt = _.result(_.find(data.ticket.custom_fields, field => {
-      return field.id === 54394587; // TODO: make dynamic
-    }), 'value');
-    return decodeLinkedResources(resourceTxt);
+  getResourcesArr() {
+    return getResourcesTxtFromCustomField(this.client)
+             .then(resourcesTxt => decodeLinkedResources(resourcesTxt));
   }
 
   findSearchResult(id) {
@@ -137,11 +133,11 @@ class App extends React.Component {
   //
   createLinkedResource(resourceObj) {
     Promise.all([
-      this.getZendeskTicket(),
+      this.getResourcesArr(),
       this.client.metadata()
     ])
       .then(values => {
-        const ticketData = values[0],
+        const resourcesArr = values[0],
               domain = values[1].settings.bloomfire_domain,
               linkedResources = [...this.state.linkedResources, {
                 display: true,
@@ -151,12 +147,11 @@ class App extends React.Component {
                 title: resourceObj.title,
                 type: resourceObj.type,
               }];
-        let resourceArr = this.getResourceArr(ticketData);
-        resourceArr.push({
+        resourcesArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr));
+        this.updateZendeskTicketCustomField(encodeLinkedResources(resourcesArr));
         this.setState({ linkedResources });
       })
   };
@@ -169,11 +164,10 @@ class App extends React.Component {
 
   //
   removeLinkedResource(resourceObj) {
-    this.getZendeskTicket() // load Zendesk ticket data from API
-      .then(data => {
-        let resourceArr = this.getResourceArr(data); // get array of linked resources
-        resourceArr = _.reject(resourceArr, resource => resource.id === resourceObj.id); // remove the pertinent linked resource
-        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourceArr)); // save the new array of linked resources
+    this.getResourcesArr()
+      .then(resourcesArr => {
+        resourcesArr = _.reject(resourcesArr, resource => resource.id === resourceObj.id); // remove the pertinent linked resource
+        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourcesArr)); // save the new array of linked resources
       }).then(data => {
         const linkedResources = _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id); // remove the pertinent linekd resource from the UI
         this.setState({ linkedResources });

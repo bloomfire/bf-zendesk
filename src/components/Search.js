@@ -59,13 +59,13 @@ class Search extends React.Component {
                return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&session_token=${token}`, fetchOpts)
                         .then(response => response.json())
                         .then(results => {
-                          const resourceArr = results
+                          const resourcesArr = results
                                                 .filter(result => (result.type === 'post' || result.type === 'question'))
                                                 .map(result => ({
                                                   type: result.type,
                                                   id: result.instance.id
                                                 }));
-                          return getResources(this.props.client, resourceArr);
+                          return getResources(this.props.client, resourcesArr);
                         });
              });
   }

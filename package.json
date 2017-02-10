@@ -6,6 +6,7 @@
   "private": true,
   "scripts": {
     "dev": "webpack --progress --colors --watch",
+    "server": "cd app/ && zat server -c settings.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

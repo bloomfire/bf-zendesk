@@ -3510,7 +3510,7 @@ module.exports = SyntheticUIEvent;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = undefined;
+exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = exports.getResourcesTxtFromCustomField = exports.getCustomFieldID = undefined;
 
 var _lodash = __webpack_require__(28);
 
@@ -3521,6 +3521,46 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 // standard options for .fetch() requests
 var fetchOpts = {
   credentials: 'include'
+};
+
+//
+var getCustomFieldID = function getCustomFieldID(client) {
+  var devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
+  return Promise.all([getFromClientTicket(client, 'requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
+  getFromClientTicket(client, 'customField:custom_field_' + devID) // field manually created for development
+  ]).then(function (values) {
+    var prod = values[0]['requirement:bloomfire_linked_resources'],
+        dev = values[1]['customField:custom_field_' + devID];
+    if (typeof prod !== 'undefined') {
+      return prod.requirement_id;
+    } else if (typeof dev !== 'undefined') {
+      return devID;
+    }
+  });
+};
+
+//
+var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(client) {
+  var getFromServer = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
+
+  var customFieldID = void 0;
+  return getCustomFieldID(client).then(function (id) {
+    customFieldID = id; // cache value
+    if (getFromServer) {
+      return getFromClientTicket(client, 'id').then(function (data) {
+        return client.request('/api/v2/tickets/' + data.id + '.json');
+      }).then(function (data) {
+        var resourcesTxt = _lodash2.default.result(_lodash2.default.find(data.ticket.custom_fields, function (field) {
+          return field.id === customFieldID;
+        }), 'value');
+        return resourcesTxt;
+      });
+    } else {
+      return getFromClientTicket(client, 'customField:custom_field_' + customFieldID).then(function (data) {
+        return data['customField:custom_field_' + customFieldID];
+      });
+    }
+  });
 };
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
@@ -3539,16 +3579,16 @@ var encodeLinkedResource = function encodeLinkedResource(resourceObj) {
 };
 
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
-var encodeLinkedResources = function encodeLinkedResources(resourceArr) {
-  return resourceArr.map(encodeLinkedResource).join('\r\n');
+var encodeLinkedResources = function encodeLinkedResources(resourcesArr) {
+  return resourcesArr.map(encodeLinkedResource).join('\r\n');
 };
 
 // given a text string of a Bloomfire linked resource, return a linked resource object
-var decodeLinkedResource = function decodeLinkedResource(resourceTxt) {
-  resourceTxt = resourceTxt.split('|');
+var decodeLinkedResource = function decodeLinkedResource(resourcesTxt) {
+  resourcesTxt = resourcesTxt.split('|');
   return {
-    type: resourceTxt[0],
-    id: parseInt(resourceTxt[1], 10)
+    type: resourcesTxt[0],
+    id: parseInt(resourcesTxt[1], 10)
   };
 };
 
@@ -3627,7 +3667,8 @@ var getSessionToken = function getSessionToken(client) {
   }
 };
 
-// convenience wrapper to ZAF's client.get()
+// convenience wrapper to ZAF's client.get() for `ticket` property
+// TODO: abstract this for other properties besides `ticket`
 var getFromClientTicket = function getFromClientTicket(client) {
   for (var _len = arguments.length, paths = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
     paths[_key - 1] = arguments[_key];
@@ -3649,11 +3690,11 @@ var getFromClientTicket = function getFromClientTicket(client) {
 };
 
 // given an array of Bloomfire resource API URLs, return a promise of response data
-var getResources = function getResources(client, resourceArr) {
+var getResources = function getResources(client, resourcesArr) {
   return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
     var token = values[0],
         domain = values[1].settings.bloomfire_domain,
-        resourceReqs = resourceArr.map(function (resource) {
+        resourceReqs = resourcesArr.map(function (resource) {
       return fetch(getResourceAPIURL(domain, resource.type, resource.id) + '?session_token=' + token, fetchOpts).then(function (response) {
         return response.json();
       });
@@ -3673,12 +3714,14 @@ var showNewTicketMessage = function showNewTicketMessage(client, type, id) {
 };
 
 // build and append href values to resources
-var addHrefs = function addHrefs(domain, resourceArr) {
-  resourceArr.forEach(function (resourceObj) {
+var addHrefs = function addHrefs(domain, resourcesArr) {
+  resourcesArr.forEach(function (resourceObj) {
     resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
   });
 };
 
+exports.getCustomFieldID = getCustomFieldID;
+exports.getResourcesTxtFromCustomField = getResourcesTxtFromCustomField;
 exports.addHrefs = addHrefs;
 exports.fetchOpts = fetchOpts;
 exports.getResources = getResources;
@@ -26989,11 +27032,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    // logging (for development)
-    console.log(456);
-    _this.client.get('requirement:bloomfire_linked_resources').then(function (data) {
-      console.dir(data);
-    });
+    // console.log(1); // DEV ONLY: ensure that latest app code is still loading
     return _this;
   }
 
@@ -27012,10 +27051,10 @@ var App = function (_React$Component) {
     value: function populateLinkedResources() {
       var _this2 = this;
 
-      Promise.all([(0, _utils.getFromClientTicket)(this.client, 'customField:custom_field_54394587'), this.client.metadata()]).then(function (values) {
-        var resourceArr = (0, _utils.decodeLinkedResources)(values[0]['customField:custom_field_54394587']),
+      Promise.all([(0, _utils.getResourcesTxtFromCustomField)(this.client, false), this.client.metadata()]).then(function (values) {
+        var resourcesArr = (0, _utils.decodeLinkedResources)(values[0]),
             domain = values[1].settings.bloomfire_domain;
-        (0, _utils.getResources)(_this2.client, resourceArr).then(function (linkedResources) {
+        (0, _utils.getResources)(_this2.client, resourcesArr).then(function (linkedResources) {
           linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
           (0, _utils.addHrefs)(domain, linkedResources);
           _this2.setState({ linkedResources: linkedResources });
@@ -27045,29 +27084,22 @@ var App = function (_React$Component) {
       return searchResults;
     }
   }, {
-    key: 'getZendeskTicket',
-    value: function getZendeskTicket() {
-      var _this4 = this;
-
-      return (0, _utils.getFromClientTicket)(this.client, 'id').then(function (data) {
-        return _this4.client.request('/api/v2/tickets/' + data.id + '.json');
-      });
-    }
-  }, {
     key: 'updateZendeskTicketCustomField',
     value: function updateZendeskTicketCustomField(value) {
-      var _this5 = this;
+      var _this4 = this;
 
-      return (0, _utils.getFromClientTicket)(this.client, 'id').then(function (data) {
-        return _this5.client.request({
-          url: '/api/v2/tickets/' + data.id + '.json',
+      return Promise.all([(0, _utils.getCustomFieldID)(this.client), (0, _utils.getFromClientTicket)(this.client, 'id')]).then(function (values) {
+        var customFieldID = values[0],
+            ticketID = values[1].id;
+        return _this4.client.request({
+          url: '/api/v2/tickets/' + ticketID + '.json',
           type: 'PUT',
           dataType: 'json',
           contentType: 'application/json',
           data: JSON.stringify({
             ticket: {
               custom_fields: [{
-                id: 54394587, // TODO: make dynamic
+                id: customFieldID,
                 value: value
               }]
             }
@@ -27076,12 +27108,11 @@ var App = function (_React$Component) {
       });
     }
   }, {
-    key: 'getResourceArr',
-    value: function getResourceArr(data) {
-      var resourceTxt = _.result(_.find(data.ticket.custom_fields, function (field) {
-        return field.id === 54394587; // TODO: make dynamic
-      }), 'value');
-      return (0, _utils.decodeLinkedResources)(resourceTxt);
+    key: 'getResourcesArr',
+    value: function getResourcesArr() {
+      return (0, _utils.getResourcesTxtFromCustomField)(this.client).then(function (resourcesTxt) {
+        return (0, _utils.decodeLinkedResources)(resourcesTxt);
+      });
     }
   }, {
     key: 'findSearchResult',
@@ -27110,12 +27141,12 @@ var App = function (_React$Component) {
   }, {
     key: 'createLinkedResource',
     value: function createLinkedResource(resourceObj) {
-      var _this6 = this;
+      var _this5 = this;
 
-      Promise.all([this.getZendeskTicket(), this.client.metadata()]).then(function (values) {
-        var ticketData = values[0],
+      Promise.all([this.getResourcesArr(), this.client.metadata()]).then(function (values) {
+        var resourcesArr = values[0],
             domain = values[1].settings.bloomfire_domain,
-            linkedResources = [].concat(_toConsumableArray(_this6.state.linkedResources), [{
+            linkedResources = [].concat(_toConsumableArray(_this5.state.linkedResources), [{
           display: true,
           href: (0, _utils.getResourceURL)(domain, resourceObj.type, resourceObj.id),
           id: resourceObj.id,
@@ -27123,13 +27154,12 @@ var App = function (_React$Component) {
           title: resourceObj.title,
           type: resourceObj.type
         }]);
-        var resourceArr = _this6.getResourceArr(ticketData);
-        resourceArr.push({
+        resourcesArr.push({
           type: resourceObj.type,
           id: resourceObj.id
         });
-        _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr));
-        _this6.setState({ linkedResources: linkedResources });
+        _this5.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourcesArr));
+        _this5.setState({ linkedResources: linkedResources });
       });
     }
   }, {
@@ -27147,21 +27177,19 @@ var App = function (_React$Component) {
   }, {
     key: 'removeLinkedResource',
     value: function removeLinkedResource(resourceObj) {
-      var _this7 = this;
+      var _this6 = this;
 
-      this.getZendeskTicket() // load Zendesk ticket data from API
-      .then(function (data) {
-        var resourceArr = _this7.getResourceArr(data); // get array of linked resources
-        resourceArr = _.reject(resourceArr, function (resource) {
+      this.getResourcesArr().then(function (resourcesArr) {
+        resourcesArr = _.reject(resourcesArr, function (resource) {
           return resource.id === resourceObj.id;
         }); // remove the pertinent linked resource
-        return _this7.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourceArr)); // save the new array of linked resources
+        return _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourcesArr)); // save the new array of linked resources
       }).then(function (data) {
-        var linkedResources = _.reject(_this7.state.linkedResources, function (linkedResource) {
+        var linkedResources = _.reject(_this6.state.linkedResources, function (linkedResource) {
           return linkedResource.id === resourceObj.id;
         }); // remove the pertinent linekd resource from the UI
-        _this7.setState({ linkedResources: linkedResources });
-        _this7.setSearchResultDisplay(resourceObj.id, true);
+        _this6.setState({ linkedResources: linkedResources });
+        _this6.setSearchResultDisplay(resourceObj.id, true);
       });
     }
   }, {
@@ -28226,7 +28254,7 @@ var Search = function (_React$Component) {
         return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&session_token=' + token, _utils.fetchOpts).then(function (response) {
           return response.json();
         }).then(function (results) {
-          var resourceArr = results.filter(function (result) {
+          var resourcesArr = results.filter(function (result) {
             return result.type === 'post' || result.type === 'question';
           }).map(function (result) {
             return {
@@ -28234,7 +28262,7 @@ var Search = function (_React$Component) {
               id: result.instance.id
             };
           });
-          return (0, _utils.getResources)(_this2.props.client, resourceArr);
+          return (0, _utils.getResources)(_this2.props.client, resourcesArr);
         });
       });
     }

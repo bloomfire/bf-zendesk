@@ -9,6 +9,50 @@ const fetchOpts = {
 
 
 
+//
+const getCustomFieldID = function (client) {
+  const devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
+  return Promise.all([
+    getFromClientTicket(client, 'requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
+    getFromClientTicket(client, `customField:custom_field_${devID}`) // field manually created for development
+  ])
+    .then(function (values) {
+      const prod = values[0]['requirement:bloomfire_linked_resources'],
+            dev = values[1][`customField:custom_field_${devID}`];
+      if (typeof prod !== 'undefined') {
+        return prod.requirement_id;
+      } else if (typeof dev !== 'undefined') {
+        return devID;
+      }
+    });
+};
+
+
+
+//
+const getResourcesTxtFromCustomField = function (client, getFromServer = true) {
+  let customFieldID;
+  return getCustomFieldID(client)
+           .then(function (id) {
+             customFieldID = id; // cache value
+             if (getFromServer) {
+               return getFromClientTicket(client, 'id')
+                        .then(data => client.request(`/api/v2/tickets/${data.id}.json`))
+                        .then(function (data) {
+                          const resourcesTxt = _.result(_.find(data.ticket.custom_fields, field => {
+                                  return field.id === customFieldID;
+                                }), 'value');
+                          return resourcesTxt;
+                        });
+             } else {
+               return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
+                        .then(data => data[`customField:custom_field_${customFieldID}`]);
+             }
+           });
+};
+
+
+
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
 const getResourceURL = (domain, type, id) => `https://${domain}/${type}s/${id}`;
 
@@ -25,16 +69,16 @@ const encodeLinkedResource = resourceObj => `${resourceObj.type}|${resourceObj.i
 
 
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
-const encodeLinkedResources = resourceArr => resourceArr.map(encodeLinkedResource).join('\r\n');
+const encodeLinkedResources = resourcesArr => resourcesArr.map(encodeLinkedResource).join('\r\n');
 
 
 
 // given a text string of a Bloomfire linked resource, return a linked resource object
-const decodeLinkedResource = function (resourceTxt) {
-  resourceTxt = resourceTxt.split('|');
+const decodeLinkedResource = function (resourcesTxt) {
+  resourcesTxt = resourcesTxt.split('|');
   return {
-    type: resourceTxt[0],
-    id: parseInt(resourceTxt[1], 10)
+    type: resourcesTxt[0],
+    id: parseInt(resourcesTxt[1], 10)
   };
 };
 
@@ -127,7 +171,8 @@ const getSessionToken = function (client) {
 
 
 
-// convenience wrapper to ZAF's client.get()
+// convenience wrapper to ZAF's client.get() for `ticket` property
+// TODO: abstract this for other properties besides `ticket`
 const getFromClientTicket = function (client, ...paths) {
   paths = paths.map(path => `ticket.${path}`);
   return client.get(paths)
@@ -145,7 +190,7 @@ const getFromClientTicket = function (client, ...paths) {
 
 
 // given an array of Bloomfire resource API URLs, return a promise of response data
-const getResources = function (client, resourceArr) {
+const getResources = function (client, resourcesArr) {
   return Promise.all([
            getSessionToken(client),
            client.metadata()
@@ -153,7 +198,7 @@ const getResources = function (client, resourceArr) {
            .then(function (values) {
              const token = values[0],
                    domain = values[1].settings.bloomfire_domain,
-                   resourceReqs = resourceArr.map(function (resource) {
+                   resourceReqs = resourcesArr.map(function (resource) {
                      return fetch(`${getResourceAPIURL(domain, resource.type, resource.id)}?session_token=${token}`, fetchOpts)
                               .then(response => response.json());
                    });
@@ -177,8 +222,8 @@ const showNewTicketMessage = function (client, type, id) {
 
 
 // build and append href values to resources
-const addHrefs = function (domain, resourceArr) {
-  resourceArr.forEach(function(resourceObj) {
+const addHrefs = function (domain, resourcesArr) {
+  resourcesArr.forEach(function (resourceObj) {
     resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
   });
 };
@@ -186,6 +231,8 @@ const addHrefs = function (domain, resourceArr) {
 
 
 export {
+  getCustomFieldID,
+  getResourcesTxtFromCustomField,
   addHrefs,
   fetchOpts,
   getResources,

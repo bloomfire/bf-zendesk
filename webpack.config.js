@@ -1,7 +1,7 @@
 'use strict';
 
-const path              = require('path'),
-      webpack           = require('webpack');
+const path    = require('path'),
+      webpack = require('webpack');
 
 const PATHS = {
   src: path.join(__dirname, '/src'),
