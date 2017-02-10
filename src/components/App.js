@@ -50,7 +50,7 @@ class App extends React.Component {
   // read linked resources from hidden ticket field and update state
   populateLinkedResources() {
     Promise.all([
-      getResourcesTxtFromCustomField(this.client, false),
+      getResourcesTxtFromCustomField(this.client),
       this.client.metadata()
     ])
       .then(values => {

@@ -13,7 +13,7 @@ const fetchOpts = {
 const getCustomFieldID = function (client) {
   const devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
   return Promise.all([
-    getFromClientTicket(client, 'requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
+    client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
     getFromClientTicket(client, `customField:custom_field_${devID}`) // field manually created for development
   ])
     .then(function (values) {
@@ -30,24 +30,22 @@ const getCustomFieldID = function (client) {
 
 
 //
-const getResourcesTxtFromCustomField = function (client, getFromServer = true) {
+const getResourcesTxtFromCustomField = function (client) {
   let customFieldID;
   return getCustomFieldID(client)
            .then(function (id) {
              customFieldID = id; // cache value
-             if (getFromServer) {
-               return getFromClientTicket(client, 'id')
-                        .then(data => client.request(`/api/v2/tickets/${data.id}.json`))
-                        .then(function (data) {
-                          const resourcesTxt = _.result(_.find(data.ticket.custom_fields, field => {
-                                  return field.id === customFieldID;
-                                }), 'value');
-                          return resourcesTxt;
-                        });
-             } else {
-               return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
-                        .then(data => data[`customField:custom_field_${customFieldID}`]);
-             }
+             // if (getFromServer) {
+             return getFromClientTicket(client, 'id')
+                      .then(data => client.request(`/api/v2/tickets/${data.id}.json`))
+                      .then(function (data) {
+                        const customFieldObj = _.find(data.ticket.custom_fields, field => field.id === customFieldID);
+                        return customFieldObj.value || '';
+                      });
+            // } else { // get from ticket field client-side
+            //   return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
+            //            .then(data => data[`customField:custom_field_${customFieldID}`]);
+            // }
            });
 };
 

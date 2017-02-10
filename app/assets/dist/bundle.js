@@ -3526,7 +3526,7 @@ var fetchOpts = {
 //
 var getCustomFieldID = function getCustomFieldID(client) {
   var devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
-  return Promise.all([getFromClientTicket(client, 'requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
+  return Promise.all([client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
   getFromClientTicket(client, 'customField:custom_field_' + devID) // field manually created for development
   ]).then(function (values) {
     var prod = values[0]['requirement:bloomfire_linked_resources'],
@@ -3541,25 +3541,22 @@ var getCustomFieldID = function getCustomFieldID(client) {
 
 //
 var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(client) {
-  var getFromServer = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : true;
-
   var customFieldID = void 0;
   return getCustomFieldID(client).then(function (id) {
     customFieldID = id; // cache value
-    if (getFromServer) {
-      return getFromClientTicket(client, 'id').then(function (data) {
-        return client.request('/api/v2/tickets/' + data.id + '.json');
-      }).then(function (data) {
-        var resourcesTxt = _lodash2.default.result(_lodash2.default.find(data.ticket.custom_fields, function (field) {
-          return field.id === customFieldID;
-        }), 'value');
-        return resourcesTxt;
+    // if (getFromServer) {
+    return getFromClientTicket(client, 'id').then(function (data) {
+      return client.request('/api/v2/tickets/' + data.id + '.json');
+    }).then(function (data) {
+      var customFieldObj = _lodash2.default.find(data.ticket.custom_fields, function (field) {
+        return field.id === customFieldID;
       });
-    } else {
-      return getFromClientTicket(client, 'customField:custom_field_' + customFieldID).then(function (data) {
-        return data['customField:custom_field_' + customFieldID];
-      });
-    }
+      return customFieldObj.value || '';
+    });
+    // } else { // get from ticket field client-side
+    //   return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
+    //            .then(data => data[`customField:custom_field_${customFieldID}`]);
+    // }
   });
 };
 
@@ -27051,7 +27048,7 @@ var App = function (_React$Component) {
     value: function populateLinkedResources() {
       var _this2 = this;
 
-      Promise.all([(0, _utils.getResourcesTxtFromCustomField)(this.client, false), this.client.metadata()]).then(function (values) {
+      Promise.all([(0, _utils.getResourcesTxtFromCustomField)(this.client), this.client.metadata()]).then(function (values) {
         var resourcesArr = (0, _utils.decodeLinkedResources)(values[0]),
             domain = values[1].settings.bloomfire_domain;
         (0, _utils.getResources)(_this2.client, resourcesArr).then(function (linkedResources) {
