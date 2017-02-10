@@ -12,7 +12,7 @@ const PATHS = {
 
 
 module.exports = {
-  entry: './src/index.js',
+  entry: ['whatwg-fetch', 'core-js/shim', './src/index.js'],
   output: {
     path: PATHS.dist,
     filename: 'bundle.js',
