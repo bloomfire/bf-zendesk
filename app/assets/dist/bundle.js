@@ -31384,7 +31384,7 @@ var AskToAnswer = function (_React$Component) {
       var tags = this.state.tags.concat(tag),
           suggestions = _.reject(this.state.suggestions, function (suggestion) {
         return suggestion.id === tag.id;
-      }); // remove the tag from the suggestion list so it can't be added twice
+      }); // remove the tag from the suggestions list so it can't be added twice
       this.setState({
         suggestions: suggestions,
         tags: tags
@@ -31410,13 +31410,6 @@ var AskToAnswer = function (_React$Component) {
 }(_react2.default.Component);
 
 exports.default = AskToAnswer;
-
-// <input type="text"
-//        name="answerers"
-//        value={this.state.answerers}
-//        placeholder="Ask member to answer (optional)"
-//        className="last-field"
-//        onChange={this.handleChange}/>
 
 /***/ }),
 /* 206 */

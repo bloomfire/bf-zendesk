@@ -76,7 +76,7 @@ class AskToAnswer extends React.Component {
 
   handleAddition(tag) {
     const tags = this.state.tags.concat(tag),
-          suggestions = _.reject(this.state.suggestions, suggestion => suggestion.id === tag.id); // remove the tag from the suggestion list so it can't be added twice
+          suggestions = _.reject(this.state.suggestions, suggestion => suggestion.id === tag.id); // remove the tag from the suggestions list so it can't be added twice
     this.setState({
       suggestions,
       tags
@@ -103,12 +103,3 @@ class AskToAnswer extends React.Component {
 
 
 export default AskToAnswer;
-
-
-
-// <input type="text"
-//        name="answerers"
-//        value={this.state.answerers}
-//        placeholder="Ask member to answer (optional)"
-//        className="last-field"
-//        onChange={this.handleChange}/>
