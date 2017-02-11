@@ -10,6 +10,9 @@ import {
   showNewTicketMessage
 }  from '../utils';
 
+// components
+import AskToAnswer from './AskToAnswer';
+
 
 
 class Question extends React.Component {
@@ -169,12 +172,8 @@ class Question extends React.Component {
                value={this.state.explanation}
                placeholder="Description (optional)"
                onChange={this.handleChange}/>
-        <input type="text"
-               name="answerers"
-               value={this.state.answerers}
-               placeholder="Ask member to answer (optional)"
-               className="last-field"
-               onChange={this.handleChange}/>
+        <AskToAnswer client={this.props.client}
+                     resize={this.props.resize}/>
         <p className="link-to-ticket">
           <input type="checkbox"
                  id="link-question"

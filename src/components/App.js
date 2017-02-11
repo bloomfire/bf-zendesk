@@ -38,7 +38,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    // console.log(1); // DEV ONLY: ensure that latest app code is still loading
+    console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
   }
 
   componentDidMount() {
@@ -175,19 +175,23 @@ class App extends React.Component {
       });
   };
 
+  applyResize() {
+    const currentHeight = this.node.clientHeight;
+    if (currentHeight !== this.lastHeight) {
+      this.lastHeight = currentHeight;
+      this.client.invoke('resize', {
+        width: '100%',
+        height: `${currentHeight + 1}px` // add 1px to make Firefox happy
+      });
+    }
+  }
+
   resize() {
     if (this.node) { // if this component exists in the DOM, resize it
-      const currentHeight = this.node.clientHeight;
-      if (currentHeight !== this.lastHeight) {
-        this.lastHeight = currentHeight;
-        this.client.invoke('resize', {
-          width: '100%',
-          height: `${currentHeight + 1}px` // add 1px to make Firefox happy
-        });
-        clearInterval(this.resizeInterval);
-      }
+      setTimeout(this.applyResize.bind(this), 0); // turn the event loop first to allow for a repaint
+      clearInterval(this.resizeInterval);
     } else if (!this.resizeInterval) { // if we're not already checking for this component to exist in the DOM
-      this.resizeInterval = setInterval(this.resize.bind(this), 100); // start checking for DOM existence in order to resize
+      this.resizeInterval = setInterval(this.resize.bind(this), 50); // start checking for DOM existence in order to resize
     }
   }
 
