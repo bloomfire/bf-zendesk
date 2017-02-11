@@ -93,7 +93,7 @@ const decodeLinkedResources = function (resourcesTxt) {
 
 
 
-// given a Zendesk user's email
+// given a Zendesk user's email, match it to their Bloomfire email and get their Bloomfire ID
 const getBloomfireUserIDByEmail = function (client, email) {
   return Promise.all([
            getSessionToken(client),

@@ -4328,7 +4328,7 @@ var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
   }
 };
 
-// given a Zendesk user's email
+// given a Zendesk user's email, match it to their Bloomfire email and get their Bloomfire ID
 var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email) {
   return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
     var token = values[0],
@@ -30908,10 +30908,12 @@ var AddContent = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (AddContent.__proto__ || Object.getPrototypeOf(AddContent)).call(this, props));
 
     _this.initialTabID = '1';
+    // state
     _this.state = {
       isCollapsed: false,
       selectedTabID: _this.initialTabID
     };
+    // bindings
     _this.toggleCollapsed = _this.toggleCollapsed.bind(_this);
     _this.switchTab = _this.switchTab.bind(_this);
     return _this;
@@ -31045,7 +31047,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    console.log(3); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
     return _this;
   }
 
@@ -31307,8 +31309,7 @@ var AskToAnswer = function (_React$Component) {
     var _this = _possibleConstructorReturn(this, (AskToAnswer.__proto__ || Object.getPrototypeOf(AskToAnswer)).call(this, props));
 
     _this.state = {
-      suggestions: [],
-      tags: []
+      suggestions: []
     };
     // bindings
     _this.handleAddition = _this.handleAddition.bind(_this);
@@ -31349,15 +31350,25 @@ var AskToAnswer = function (_React$Component) {
     value: function populateSuggestions() {
       var _this3 = this;
 
-      Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
+      Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata(), this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
+      .then(function (data) {
+        return data['currentUser.email'];
+      }) // extract the returned property
+      .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
+      ]).then(function (values) {
         var token = values[0],
-            domain = values[1].settings.bloomfire_domain;
+            domain = values[1].settings.bloomfire_domain,
+            currentUserID = values[2];
         fetch('https://' + domain + '/api/v2/users?fields=active,id,first_name,last_name&session_token=' + token, _utils.fetchOpts).then(function (response) {
           return response.json();
         }).then(function (users) {
+          _this3.props.setCurrentUserID(currentUserID); // pass current user ID upstream to avoid an extra API request
           users = _.filter(users, function (user) {
             return user.active;
-          }); // remove inactive users
+          }); // keep only active users
+          users = _.reject(users, function (user) {
+            return user.id === currentUserID;
+          }); // remove current user (so they can't ask to answer their own question)
           users = users.map(function (user) {
             return {
               id: user.id,
@@ -31371,30 +31382,27 @@ var AskToAnswer = function (_React$Component) {
   }, {
     key: 'handleDelete',
     value: function handleDelete(i) {
-      var tags = this.state.tags.slice(0),
-          removedTag = tags.splice(i, 1)[0];
-      this.setState({
-        suggestions: [].concat(_toConsumableArray(this.state.suggestions), [removedTag]), // add the removed tag back to the suggestions list
-        tags: tags
-      });
+      var answerers = this.props.answerers.slice(0),
+          removedAnswerer = answerers.splice(i, 1)[0],
+          suggestions = [].concat(_toConsumableArray(this.state.suggestions), [removedAnswerer]); // add the removed answerer back to the suggestions list
+      this.setState({ suggestions: suggestions });
+      this.props.setAnswerers(answerers);
     }
   }, {
     key: 'handleAddition',
-    value: function handleAddition(tag) {
-      var tags = this.state.tags.concat(tag),
+    value: function handleAddition(answerer) {
+      var answerers = this.props.answerers.concat(answerer),
           suggestions = _.reject(this.state.suggestions, function (suggestion) {
-        return suggestion.id === tag.id;
-      }); // remove the tag from the suggestions list so it can't be added twice
-      this.setState({
-        suggestions: suggestions,
-        tags: tags
-      });
+        return suggestion.id === answerer.id;
+      }); // remove the answerer from the suggestions list so it can't be added twice
+      this.setState({ suggestions: suggestions });
+      this.props.setAnswerers(answerers);
     }
   }, {
     key: 'render',
     value: function render() {
       var classNames = { root: 'react-tags last-field' };
-      return _react2.default.createElement(_reactTagAutocomplete2.default, { tags: this.state.tags,
+      return _react2.default.createElement(_reactTagAutocomplete2.default, { tags: this.props.answerers,
         suggestions: this.state.suggestions,
         placeholder: 'Ask member to answer (optional)',
         autofocus: false,
@@ -31985,7 +31993,7 @@ var Question = function (_React$Component) {
     _this.state = {
       question: '', // question textarea value
       explanation: '', // explanation input value
-      answerers: [{ id: 11972, name: 'Michael Pazienza' }], // answerers input value
+      answerers: [], // answerers input value
       questionIsValid: false, // question textarea value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
@@ -31995,10 +32003,22 @@ var Question = function (_React$Component) {
     // bindings
     _this.handleChange = _this.handleChange.bind(_this);
     _this.handleSubmit = _this.handleSubmit.bind(_this);
+    _this.setAnswerers = _this.setAnswerers.bind(_this);
+    _this.setCurrentUserID = _this.setCurrentUserID.bind(_this);
     return _this;
   }
 
   _createClass(Question, [{
+    key: 'setAnswerers',
+    value: function setAnswerers(answerers) {
+      this.setState({ answerers: answerers });
+    }
+  }, {
+    key: 'setCurrentUserID',
+    value: function setCurrentUserID(currentUserID) {
+      this.currentUserID = currentUserID;
+    }
+  }, {
     key: 'validateQuestion',
     value: function validateQuestion() {
       var questionIsValid = _lodash2.default.trim(this.state.question).length > 0;
@@ -32023,7 +32043,7 @@ var Question = function (_React$Component) {
     }
   }, {
     key: 'submitForm',
-    value: function submitForm(userID) {
+    value: function submitForm(currentUserID) {
       var _this2 = this;
 
       return Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
@@ -32032,7 +32052,7 @@ var Question = function (_React$Component) {
         return fetch('https://' + domain + '/api/v2/questions?session_token=' + token, _lodash2.default.merge({}, _utils.fetchOpts, {
           method: 'POST',
           body: (0, _utils.getFormDataFromJSON)({
-            author: userID,
+            author: currentUserID,
             question: _this2.state.question,
             explanation: _this2.state.explanation,
             published: true,
@@ -32091,12 +32111,7 @@ var Question = function (_React$Component) {
       this.setState({ submitted: true });
       if (this.validateForm()) {
         this.setState({ processing: true });
-        this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
-        .then(function (data) {
-          return data['currentUser.email'];
-        }) // extract the returned property
-        .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
-        .then(this.submitForm.bind(this)) // submit form data
+        this.submitForm(this.currentUserID) // submit form data
         .then(function (response) {
           return response.json();
         }) // extract JSON from response
@@ -32149,10 +32164,13 @@ var Question = function (_React$Component) {
         _react2.default.createElement('input', { type: 'text',
           name: 'explanation',
           value: this.state.explanation,
-          placeholder: 'Description (optional)',
+          placeholder: 'Explanation (optional)',
           onChange: this.handleChange }),
         _react2.default.createElement(_AskToAnswer2.default, { client: this.props.client,
-          resize: this.props.resize }),
+          resize: this.props.resize,
+          answerers: this.state.answerers,
+          setAnswerers: this.setAnswerers,
+          setCurrentUserID: this.setCurrentUserID }),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },

@@ -3,12 +3,11 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import {
   fetchOpts,
-  getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter,
   getSessionToken,
   showNewTicketMessage
-}  from '../utils';
+} from '../utils';
 
 // components
 import AskToAnswer from './AskToAnswer';
@@ -23,7 +22,7 @@ class Question extends React.Component {
     this.state = {
       question: '', // question textarea value
       explanation: '', // explanation input value
-      answerers: [{ id: 11972, name: 'Michael Pazienza' }], // answerers input value
+      answerers: [], // answerers input value
       questionIsValid: false, // question textarea value is valid
       linkToTicket: true, // link checkbox
       processing: false, // form is currently being submitted
@@ -33,6 +32,16 @@ class Question extends React.Component {
     // bindings
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
+    this.setAnswerers = this.setAnswerers.bind(this);
+    this.setCurrentUserID = this.setCurrentUserID.bind(this);
+  }
+
+  setAnswerers(answerers) {
+    this.setState({ answerers });
+  }
+
+  setCurrentUserID(currentUserID) {
+    this.currentUserID = currentUserID;
   }
 
   validateQuestion() {
@@ -55,7 +64,7 @@ class Question extends React.Component {
     });
   }
 
-  submitForm(userID) {
+  submitForm(currentUserID) {
     return Promise.all([
              getSessionToken(this.props.client),
              this.props.client.metadata()
@@ -66,7 +75,7 @@ class Question extends React.Component {
                return fetch(`https://${domain}/api/v2/questions?session_token=${token}`, _.merge({}, fetchOpts, {
                  method: 'POST',
                  body: getFormDataFromJSON({
-                   author: userID,
+                   author: currentUserID,
                    question: this.state.question,
                    explanation: this.state.explanation,
                    published: true,
@@ -116,10 +125,7 @@ class Question extends React.Component {
     this.setState({ submitted: true });
     if (this.validateForm()) {
       this.setState({ processing: true });
-      this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
-        .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
-        .then(this.submitForm.bind(this)) // submit form data
+      this.submitForm(this.currentUserID) // submit form data
         .then(response => response.json()) // extract JSON from response
         .then(data => { // submit answerers, if needed, or just return response data again immediately
           if (this.state.answerers.length > 0) {
@@ -170,10 +176,13 @@ class Question extends React.Component {
         <input type="text"
                name="explanation"
                value={this.state.explanation}
-               placeholder="Description (optional)"
+               placeholder="Explanation (optional)"
                onChange={this.handleChange}/>
         <AskToAnswer client={this.props.client}
-                     resize={this.props.resize}/>
+                     resize={this.props.resize}
+                     answerers={this.state.answerers}
+                     setAnswerers={this.setAnswerers}
+                     setCurrentUserID={this.setCurrentUserID}/>
         <p className="link-to-ticket">
           <input type="checkbox"
                  id="link-question"

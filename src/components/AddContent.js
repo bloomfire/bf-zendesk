@@ -14,10 +14,12 @@ class AddContent extends React.Component {
   constructor(props) {
     super(props);
     this.initialTabID = '1';
+    // state
     this.state = {
       isCollapsed: false,
       selectedTabID: this.initialTabID
     };
+    // bindings
     this.toggleCollapsed = this.toggleCollapsed.bind(this);
     this.switchTab = this.switchTab.bind(this);
   }
