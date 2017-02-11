@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import {
   fetchOpts,
   getSessionToken
@@ -26,10 +27,21 @@ class AskToAnswer extends React.Component {
   componentDidMount() {
     this.props.resize();
     this.populateSuggestions();
+    this.node = ReactDOM.findDOMNode(this);
+    this.hackilyFixAskToAnswer();
   }
 
   componentDidUpdate() {
     this.props.resize();
+  }
+
+  // may be fixed by https://github.com/i-like-robots/react-tags/issues/52, which addresses https://github.com/i-like-robots/react-tags/issues/52
+  // TODO: fork repo and apply PR, or wait for repo to accept PR
+  hackilyFixAskToAnswer() {
+    setTimeout(() => { // wait for event loop to turn
+      const input = this.node.querySelector('.react-tags__search-input input');
+      input.style.width = '302px';
+    }, 0);
   }
 
   populateSuggestions() {
@@ -54,27 +66,35 @@ class AskToAnswer extends React.Component {
   }
 
   handleDelete(i) {
-    let tags = this.state.tags.slice(0);
-    tags.splice(i, 1);
-    this.setState({ tags });
+    const tags = this.state.tags.slice(0),
+          removedTag = tags.splice(i, 1)[0];
+    this.setState({
+      suggestions: [...this.state.suggestions, removedTag], // add the removed tag back to the suggestions list
+      tags
+    });
   }
 
   handleAddition(tag) {
-    const tags = this.state.tags.concat(tag);
-    this.setState({ tags });
+    const tags = this.state.tags.concat(tag),
+          suggestions = _.reject(this.state.suggestions, suggestion => suggestion.id === tag.id); // remove the tag from the suggestion list so it can't be added twice
+    this.setState({
+      suggestions,
+      tags
+    });
   }
 
   render() {
+    const classNames = { root: 'react-tags last-field' };
     return (
       <ReactTags tags={this.state.tags}
                  suggestions={this.state.suggestions}
                  placeholder="Ask member to answer (optional)"
                  autofocus={false}
                  minQueryLength={1}
-                 maxSuggestionsLength={3}
+                 maxSuggestionsLength={1}
                  handleAddition={this.handleAddition}
                  handleDelete={this.handleDelete}
-                 className="last-field"/>
+                 classNames={classNames}/>
     );
   }
 

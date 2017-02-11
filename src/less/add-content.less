@@ -59,7 +59,8 @@ section.add-content {
   }
 
   input[type=text],
-  textarea {
+  textarea,
+  .react-tags {
     margin-bottom: 11px;
 
     &.last-field {
@@ -84,16 +85,9 @@ section.add-content {
 
   .react-tags {
     position: relative;
-    padding: 6px 0 0 6px;
-    border: 1px solid #D1D1D1;
-    border-radius: 1px;
-    font-size: 1em;
-    line-height: 1.2;
     cursor: text;
-
-    &.is-focused {
-      border-color: #B1B1B1;
-    }
+    padding-bottom: 0;
+    width: auto;
   }
 
   .react-tags__selected {
@@ -101,32 +95,35 @@ section.add-content {
   }
 
   .react-tags__selected-tag {
+    .border-radius(2px);
+    border: 1px solid #d1d1d1;
     display: inline-block;
-    box-sizing: border-box;
-    margin: 0 6px 6px 0;
-    padding: 6px 8px;
-    border: 1px solid #D1D1D1;
-    border-radius: 2px;
-    background: #F1F1F1;
+    margin: 0 8px 3px 0;
+    padding: 0 4px;
+    background: #f1f1f1;
+    font-family: inherit;
     font-size: inherit;
-    line-height: inherit;
+    line-height: 16px;
   }
 
-  .react-tags__selected-tag:after {
+  .react-tags__selected-tag::after {
     content: '\2715';
     color: #AAA;
-    margin-left: 8px;
+    margin-left: 4px;
   }
 
   .react-tags__selected-tag:hover,
   .react-tags__selected-tag:focus {
     border-color: #B1B1B1;
+
+    &::after {
+      color: #404040;
+    }
   }
 
   .react-tags__search {
     display: inline-block;
-    padding: 7px 2px;
-    margin-bottom: 6px;
+    margin-bottom: 3px;
     max-width: 100%;
 
     input {
@@ -134,8 +131,8 @@ section.add-content {
       margin: 0;
       padding: 0;
       border: 0;
-      outline: none;
       font-size: inherit;
+      font-family: inherit;
       line-height: inherit;
 
       &::-ms-clear {
@@ -151,26 +148,25 @@ section.add-content {
     width: 100%;
 
     ul {
+      .border-radius(2px);
       margin: 4px -1px;
       padding: 0;
       list-style: none;
-      background: white;
-      border: 1px solid #D1D1D1;
-      border-radius: 2px;
-      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+      background: #fff;
+      border: 1px solid #d1d1d1;
     }
 
     li {
-      border-bottom: 1px solid #ddd;
-      padding: 6px 8px;
+      // border-bottom: 1px solid #ddd; // TODO: reenable if we display more than one suggestion at a time
+      padding: 3px 8px;
 
       &:hover {
         cursor: pointer;
-        background: #eee;
+        background: #efefef;
       }
 
       &.is-active {
-        background: #b7cfe0;
+        background: #eee;
       }
 
       &.is-disabled {

@@ -51,12 +51,14 @@ section {
 }
 
 textarea,
-input {
-  outline: none;
+input,
+button {
+  outline: none !important;
 }
 
 textarea,
-input[type=text] {
+input[type=text],
+.react-tags {
   .border-radius(2px);
   border: 1px solid #b8b8b8;
   font-family: inherit;
@@ -67,19 +69,23 @@ input[type=text] {
   line-height: 18px;
   padding: 3px 8px;
 
-  &::-webkit-input-placeholder {
+  &::-webkit-input-placeholder,
+  ::-webkit-input-placeholder {
     font-weight: 300;
   }
 
-  &:-moz-placeholder {
+  &:-moz-placeholder,
+  :-moz-placeholder {
     font-weight: 300;
   }
 
-  &::-moz-placeholder {
+  &::-moz-placeholder,
+  ::-moz-placeholder {
     font-weight: 300;
   }
 
-  &:-ms-input-placeholder {
+  &:-ms-input-placeholder,
+  :-ms-input-placeholder {
     font-weight: 300;
   }
 }

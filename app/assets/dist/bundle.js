@@ -1031,7 +1031,7 @@ module.exports = function(NAME, exec){
 /***/ (function(module, exports, __webpack_require__) {
 
 // to indexed object, toObject with fallback for non-array-like ES3 strings
-var IObject = __webpack_require__(68)
+var IObject = __webpack_require__(69)
   , defined = __webpack_require__(29);
 module.exports = function(it){
   return IObject(defined(it));
@@ -1381,7 +1381,7 @@ module.exports = ReactComponentTreeHook;
 /* 25 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var pIE            = __webpack_require__(69)
+var pIE            = __webpack_require__(70)
   , createDesc     = __webpack_require__(43)
   , toIObject      = __webpack_require__(23)
   , toPrimitive    = __webpack_require__(34)
@@ -1534,7 +1534,7 @@ module.exports = emptyFunction;
 // 5 -> Array#find
 // 6 -> Array#findIndex
 var ctx      = __webpack_require__(37)
-  , IObject  = __webpack_require__(68)
+  , IObject  = __webpack_require__(69)
   , toObject = __webpack_require__(17)
   , toLength = __webpack_require__(15)
   , asc      = __webpack_require__(215);
@@ -2001,7 +2001,7 @@ if(__webpack_require__(11)){
     , toPrimitive         = __webpack_require__(34)
     , has                 = __webpack_require__(18)
     , same                = __webpack_require__(165)
-    , classof             = __webpack_require__(67)
+    , classof             = __webpack_require__(68)
     , isObject            = __webpack_require__(8)
     , toObject            = __webpack_require__(17)
     , isArrayIter         = __webpack_require__(101)
@@ -4234,6 +4234,242 @@ module.exports = React;
 /* 67 */
 /***/ (function(module, exports, __webpack_require__) {
 
+"use strict";
+
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = exports.getResourcesTxtFromCustomField = exports.getCustomFieldID = undefined;
+
+var _lodash = __webpack_require__(87);
+
+var _lodash2 = _interopRequireDefault(_lodash);
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+// standard options for .fetch() requests
+var fetchOpts = {
+  credentials: 'include'
+};
+
+//
+var getCustomFieldID = function getCustomFieldID(client) {
+  var devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
+  return Promise.all([client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
+  getFromClientTicket(client, 'customField:custom_field_' + devID) // field manually created for development
+  ]).then(function (values) {
+    var prod = values[0]['requirement:bloomfire_linked_resources'],
+        dev = values[1]['customField:custom_field_' + devID];
+    if (typeof prod !== 'undefined') {
+      return prod.requirement_id;
+    } else if (typeof dev !== 'undefined') {
+      return devID;
+    }
+  });
+};
+
+//
+var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(client) {
+  var customFieldID = void 0;
+  return getCustomFieldID(client).then(function (id) {
+    customFieldID = id; // cache value
+    // if (getFromServer) {
+    return getFromClientTicket(client, 'id').then(function (data) {
+      return client.request('/api/v2/tickets/' + data.id + '.json');
+    }).then(function (data) {
+      var customFieldObj = _lodash2.default.find(data.ticket.custom_fields, function (field) {
+        return field.id === customFieldID;
+      });
+      return customFieldObj.value || '';
+    });
+    // } else { // get from ticket field client-side
+    //   return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
+    //            .then(data => data[`customField:custom_field_${customFieldID}`]);
+    // }
+  });
+};
+
+// given a Bloomfire linked resource domain, type and ID, return the URL for the resource
+var getResourceURL = function getResourceURL(domain, type, id) {
+  return 'https://' + domain + '/' + type + 's/' + id;
+};
+
+// given a Bloomfire linked resource domain, type and ID, return the API URL for the resource
+var getResourceAPIURL = function getResourceAPIURL(domain, type, id) {
+  return 'https://' + domain + '/api/v2/' + type + 's/' + id;
+};
+
+// given a Bloomfire linked resource object, return a text representation
+var encodeLinkedResource = function encodeLinkedResource(resourceObj) {
+  return resourceObj.type + '|' + resourceObj.id;
+};
+
+// given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
+var encodeLinkedResources = function encodeLinkedResources(resourcesArr) {
+  return resourcesArr.map(encodeLinkedResource).join('\r\n');
+};
+
+// given a text string of a Bloomfire linked resource, return a linked resource object
+var decodeLinkedResource = function decodeLinkedResource(resourcesTxt) {
+  resourcesTxt = resourcesTxt.split('|');
+  return {
+    type: resourcesTxt[0],
+    id: parseInt(resourcesTxt[1], 10)
+  };
+};
+
+// given a text string containing Bloomfire linked resources, return an array of linked resource objects
+var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
+  if (resourcesTxt.length > 0) {
+    return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
+  } else {
+    return [];
+  }
+};
+
+// given a Zendesk user's email
+var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email) {
+  return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
+    var token = values[0],
+        domain = values[1].settings.bloomfire_domain;
+    return fetch('https://' + domain + '/api/v2/users?fields=email,id&session_token=' + token, fetchOpts).then(function (response) {
+      return response.json();
+    }).then(function (users) {
+      return _lodash2.default.result(_lodash2.default.find(users, function (user) {
+        return user.email === email;
+      }), 'id');
+    });
+  });
+};
+
+//
+var getFormDataFromJSON = function getFormDataFromJSON(obj) {
+  var formData = new FormData();
+  Object.keys(obj).forEach(function (key) {
+    return formData.append(key, obj[key]);
+  });
+  return formData;
+};
+
+//
+var capitalizeFirstLetter = function capitalizeFirstLetter(str) {
+  return '' + str.charAt(0).toUpperCase() + str.slice(1);
+};
+
+//
+var trimResource = function trimResource(resource) {
+  return {
+    id: resource.id,
+    type: resource.contribution_type,
+    public: resource.public,
+    title: resource.title || resource.question,
+    display: true // set to display initially
+  };
+};
+
+//
+var sessionToken = void 0;
+var getSessionToken = function getSessionToken(client) {
+  if (sessionToken) {
+    return Promise.resolve(sessionToken);
+  } else {
+    return Promise.all([client.get('currentUser.email') // get current user's email via Zendesk client SDK
+    .then(function (data) {
+      return data['currentUser.email'];
+    }), // extract the returned property
+    client.metadata()]).then(function (values) {
+      var email = values[0],
+          domain = values[1].settings.bloomfire_domain,
+          key = values[1].settings.bloomfire_api_key;
+      return fetch('https://' + domain + '/api/v2/login?email=' + encodeURIComponent(email) + '&api_key=' + key).then(function (data) {
+        return data.json();
+      }).then(function (data) {
+        if (typeof sessionToken === 'undefined') {
+          sessionToken = data.session_token;
+        }
+        return data.session_token;
+      });
+    });
+  }
+};
+
+// convenience wrapper to ZAF's client.get() for `ticket` property
+// TODO: abstract this for other properties besides `ticket`
+var getFromClientTicket = function getFromClientTicket(client) {
+  for (var _len = arguments.length, paths = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
+    paths[_key - 1] = arguments[_key];
+  }
+
+  paths = paths.map(function (path) {
+    return 'ticket.' + path;
+  });
+  return client.get(paths).then(function (data) {
+    var obj = {};
+    for (var key in data) {
+      if (key !== 'errors') {
+        // discard errors object
+        obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
+      }
+    }
+    return obj;
+  });
+};
+
+// given an array of Bloomfire resource API URLs, return a promise of response data
+var getResources = function getResources(client, resourcesArr) {
+  return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
+    var token = values[0],
+        domain = values[1].settings.bloomfire_domain,
+        resourceReqs = resourcesArr.map(function (resource) {
+      return fetch(getResourceAPIURL(domain, resource.type, resource.id) + '?session_token=' + token, fetchOpts).then(function (response) {
+        return response.json();
+      });
+    });
+    return Promise.all(resourceReqs);
+  });
+};
+
+//
+var showNewTicketMessage = function showNewTicketMessage(client, type, id) {
+  client.metadata().then(function (metadata) {
+    var resource = capitalizeFirstLetter(type),
+        postURL = 'https://' + metadata.settings.bloomfire_domain + '/' + type + 's/' + id,
+        message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
+    client.invoke('notify', message, 'notice');
+  });
+};
+
+// build and append href values to resources
+var addHrefs = function addHrefs(domain, resourcesArr) {
+  resourcesArr.forEach(function (resourceObj) {
+    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
+  });
+};
+
+exports.getCustomFieldID = getCustomFieldID;
+exports.getResourcesTxtFromCustomField = getResourcesTxtFromCustomField;
+exports.addHrefs = addHrefs;
+exports.fetchOpts = fetchOpts;
+exports.getResources = getResources;
+exports.getResourceURL = getResourceURL;
+exports.getResourceAPIURL = getResourceAPIURL;
+exports.encodeLinkedResource = encodeLinkedResource;
+exports.encodeLinkedResources = encodeLinkedResources;
+exports.decodeLinkedResource = decodeLinkedResource;
+exports.decodeLinkedResources = decodeLinkedResources;
+exports.getBloomfireUserIDByEmail = getBloomfireUserIDByEmail;
+exports.getFormDataFromJSON = getFormDataFromJSON;
+exports.capitalizeFirstLetter = capitalizeFirstLetter;
+exports.trimResource = trimResource;
+exports.getSessionToken = getSessionToken;
+exports.getFromClientTicket = getFromClientTicket;
+exports.showNewTicketMessage = showNewTicketMessage;
+
+/***/ }),
+/* 68 */
+/***/ (function(module, exports, __webpack_require__) {
+
 // getting tag from 19.1.3.6 Object.prototype.toString()
 var cof = __webpack_require__(28)
   , TAG = __webpack_require__(9)('toStringTag')
@@ -4259,7 +4495,7 @@ module.exports = function(it){
 };
 
 /***/ }),
-/* 68 */
+/* 69 */
 /***/ (function(module, exports, __webpack_require__) {
 
 // fallback for non-array-like ES3 and non-enumerable old V8 strings
@@ -4269,13 +4505,13 @@ module.exports = Object('z').propertyIsEnumerable(0) ? Object : function(it){
 };
 
 /***/ }),
-/* 69 */
+/* 70 */
 /***/ (function(module, exports) {
 
 exports.f = {}.propertyIsEnumerable;
 
 /***/ }),
-/* 70 */
+/* 71 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4301,7 +4537,7 @@ module.exports = emptyObject;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
-/* 71 */
+/* 72 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4585,7 +4821,7 @@ module.exports = EventPluginHub;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
-/* 72 */
+/* 73 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4601,7 +4837,7 @@ module.exports = EventPluginHub;
 
 
 
-var EventPluginHub = __webpack_require__(71);
+var EventPluginHub = __webpack_require__(72);
 var EventPluginUtils = __webpack_require__(123);
 
 var accumulateInto = __webpack_require__(189);
@@ -4725,7 +4961,7 @@ module.exports = EventPropagators;
 /* WEBPACK VAR INJECTION */}.call(exports, __webpack_require__(1)))
 
 /***/ }),
-/* 73 */
+/* 74 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4778,7 +5014,7 @@ var ReactInstanceMap = {
 module.exports = ReactInstanceMap;
 
 /***/ }),
-/* 74 */
+/* 75 */
 /***/ (function(module, exports, __webpack_require__) {
 
 "use strict";
@@ -4840,242 +5076,6 @@ function SyntheticUIEvent(dispatchConfig, dispatchMarker, nativeEvent, nativeEve
 SyntheticEvent.augmentClass(SyntheticUIEvent, UIEventInterface);
 
 module.exports = SyntheticUIEvent;
-
-/***/ }),
-/* 75 */
-/***/ (function(module, exports, __webpack_require__) {
-
-"use strict";
-
-
-Object.defineProperty(exports, "__esModule", {
-  value: true
-});
-exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = exports.getResourcesTxtFromCustomField = exports.getCustomFieldID = undefined;
-
-var _lodash = __webpack_require__(87);
-
-var _lodash2 = _interopRequireDefault(_lodash);
-
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
-
-// standard options for .fetch() requests
-var fetchOpts = {
-  credentials: 'include'
-};
-
-//
-var getCustomFieldID = function getCustomFieldID(client) {
-  var devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
-  return Promise.all([client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
-  getFromClientTicket(client, 'customField:custom_field_' + devID) // field manually created for development
-  ]).then(function (values) {
-    var prod = values[0]['requirement:bloomfire_linked_resources'],
-        dev = values[1]['customField:custom_field_' + devID];
-    if (typeof prod !== 'undefined') {
-      return prod.requirement_id;
-    } else if (typeof dev !== 'undefined') {
-      return devID;
-    }
-  });
-};
-
-//
-var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(client) {
-  var customFieldID = void 0;
-  return getCustomFieldID(client).then(function (id) {
-    customFieldID = id; // cache value
-    // if (getFromServer) {
-    return getFromClientTicket(client, 'id').then(function (data) {
-      return client.request('/api/v2/tickets/' + data.id + '.json');
-    }).then(function (data) {
-      var customFieldObj = _lodash2.default.find(data.ticket.custom_fields, function (field) {
-        return field.id === customFieldID;
-      });
-      return customFieldObj.value || '';
-    });
-    // } else { // get from ticket field client-side
-    //   return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
-    //            .then(data => data[`customField:custom_field_${customFieldID}`]);
-    // }
-  });
-};
-
-// given a Bloomfire linked resource domain, type and ID, return the URL for the resource
-var getResourceURL = function getResourceURL(domain, type, id) {
-  return 'https://' + domain + '/' + type + 's/' + id;
-};
-
-// given a Bloomfire linked resource domain, type and ID, return the API URL for the resource
-var getResourceAPIURL = function getResourceAPIURL(domain, type, id) {
-  return 'https://' + domain + '/api/v2/' + type + 's/' + id;
-};
-
-// given a Bloomfire linked resource object, return a text representation
-var encodeLinkedResource = function encodeLinkedResource(resourceObj) {
-  return resourceObj.type + '|' + resourceObj.id;
-};
-
-// given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
-var encodeLinkedResources = function encodeLinkedResources(resourcesArr) {
-  return resourcesArr.map(encodeLinkedResource).join('\r\n');
-};
-
-// given a text string of a Bloomfire linked resource, return a linked resource object
-var decodeLinkedResource = function decodeLinkedResource(resourcesTxt) {
-  resourcesTxt = resourcesTxt.split('|');
-  return {
-    type: resourcesTxt[0],
-    id: parseInt(resourcesTxt[1], 10)
-  };
-};
-
-// given a text string containing Bloomfire linked resources, return an array of linked resource objects
-var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
-  if (resourcesTxt.length > 0) {
-    return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
-  } else {
-    return [];
-  }
-};
-
-// given a Zendesk user's email
-var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email) {
-  return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
-    var token = values[0],
-        domain = values[1].settings.bloomfire_domain;
-    return fetch('https://' + domain + '/api/v2/users?fields=email,id&session_token=' + token, fetchOpts).then(function (response) {
-      return response.json();
-    }).then(function (users) {
-      return _lodash2.default.result(_lodash2.default.find(users, function (user) {
-        return user.email === email;
-      }), 'id');
-    });
-  });
-};
-
-//
-var getFormDataFromJSON = function getFormDataFromJSON(obj) {
-  var formData = new FormData();
-  Object.keys(obj).forEach(function (key) {
-    return formData.append(key, obj[key]);
-  });
-  return formData;
-};
-
-//
-var capitalizeFirstLetter = function capitalizeFirstLetter(str) {
-  return '' + str.charAt(0).toUpperCase() + str.slice(1);
-};
-
-//
-var trimResource = function trimResource(resource) {
-  return {
-    id: resource.id,
-    type: resource.contribution_type,
-    public: resource.public,
-    title: resource.title || resource.question,
-    display: true // set to display initially
-  };
-};
-
-//
-var sessionToken = void 0;
-var getSessionToken = function getSessionToken(client) {
-  if (sessionToken) {
-    return Promise.resolve(sessionToken);
-  } else {
-    return Promise.all([client.get('currentUser.email') // get current user's email via Zendesk client SDK
-    .then(function (data) {
-      return data['currentUser.email'];
-    }), // extract the returned property
-    client.metadata()]).then(function (values) {
-      var email = values[0],
-          domain = values[1].settings.bloomfire_domain,
-          key = values[1].settings.bloomfire_api_key;
-      return fetch('https://' + domain + '/api/v2/login?email=' + encodeURIComponent(email) + '&api_key=' + key).then(function (data) {
-        return data.json();
-      }).then(function (data) {
-        if (typeof sessionToken === 'undefined') {
-          sessionToken = data.session_token;
-        }
-        return data.session_token;
-      });
-    });
-  }
-};
-
-// convenience wrapper to ZAF's client.get() for `ticket` property
-// TODO: abstract this for other properties besides `ticket`
-var getFromClientTicket = function getFromClientTicket(client) {
-  for (var _len = arguments.length, paths = Array(_len > 1 ? _len - 1 : 0), _key = 1; _key < _len; _key++) {
-    paths[_key - 1] = arguments[_key];
-  }
-
-  paths = paths.map(function (path) {
-    return 'ticket.' + path;
-  });
-  return client.get(paths).then(function (data) {
-    var obj = {};
-    for (var key in data) {
-      if (key !== 'errors') {
-        // discard errors object
-        obj[key.slice(7)] = data[key]; // remove 'ticket.' prefix
-      }
-    }
-    return obj;
-  });
-};
-
-// given an array of Bloomfire resource API URLs, return a promise of response data
-var getResources = function getResources(client, resourcesArr) {
-  return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
-    var token = values[0],
-        domain = values[1].settings.bloomfire_domain,
-        resourceReqs = resourcesArr.map(function (resource) {
-      return fetch(getResourceAPIURL(domain, resource.type, resource.id) + '?session_token=' + token, fetchOpts).then(function (response) {
-        return response.json();
-      });
-    });
-    return Promise.all(resourceReqs);
-  });
-};
-
-//
-var showNewTicketMessage = function showNewTicketMessage(client, type, id) {
-  client.metadata().then(function (metadata) {
-    var resource = capitalizeFirstLetter(type),
-        postURL = 'https://' + metadata.settings.bloomfire_domain + '/' + type + 's/' + id,
-        message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
-    client.invoke('notify', message, 'notice');
-  });
-};
-
-// build and append href values to resources
-var addHrefs = function addHrefs(domain, resourcesArr) {
-  resourcesArr.forEach(function (resourceObj) {
-    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
-  });
-};
-
-exports.getCustomFieldID = getCustomFieldID;
-exports.getResourcesTxtFromCustomField = getResourcesTxtFromCustomField;
-exports.addHrefs = addHrefs;
-exports.fetchOpts = fetchOpts;
-exports.getResources = getResources;
-exports.getResourceURL = getResourceURL;
-exports.getResourceAPIURL = getResourceAPIURL;
-exports.encodeLinkedResource = encodeLinkedResource;
-exports.encodeLinkedResources = encodeLinkedResources;
-exports.decodeLinkedResource = decodeLinkedResource;
-exports.decodeLinkedResources = decodeLinkedResources;
-exports.getBloomfireUserIDByEmail = getBloomfireUserIDByEmail;
-exports.getFormDataFromJSON = getFormDataFromJSON;
-exports.capitalizeFirstLetter = capitalizeFirstLetter;
-exports.trimResource = trimResource;
-exports.getSessionToken = getSessionToken;
-exports.getFromClientTicket = getFromClientTicket;
-exports.showNewTicketMessage = showNewTicketMessage;
 
 /***/ }),
 /* 76 */
@@ -23070,7 +23070,7 @@ module.exports = ReactBrowserEventEmitter;
 
 
 
-var SyntheticUIEvent = __webpack_require__(74);
+var SyntheticUIEvent = __webpack_require__(75);
 var ViewportMetrics = __webpack_require__(188);
 
 var getEventModifierState = __webpack_require__(131);
@@ -24389,7 +24389,7 @@ module.exports = function(name){
 /* 118 */
 /***/ (function(module, exports, __webpack_require__) {
 
-var classof   = __webpack_require__(67)
+var classof   = __webpack_require__(68)
   , ITERATOR  = __webpack_require__(9)('iterator')
   , Iterators = __webpack_require__(61);
 module.exports = __webpack_require__(41).getIteratorMethod = function(it){
@@ -25359,7 +25359,7 @@ module.exports = ReactErrorUtils;
 var _prodInvariant = __webpack_require__(7);
 
 var ReactCurrentOwner = __webpack_require__(36);
-var ReactInstanceMap = __webpack_require__(73);
+var ReactInstanceMap = __webpack_require__(74);
 var ReactInstrumentation = __webpack_require__(27);
 var ReactUpdates = __webpack_require__(35);
 
@@ -26273,7 +26273,7 @@ var _prodInvariant = __webpack_require__(58);
 var ReactNoopUpdateQueue = __webpack_require__(137);
 
 var canDefineProperty = __webpack_require__(139);
-var emptyObject = __webpack_require__(70);
+var emptyObject = __webpack_require__(71);
 var invariant = __webpack_require__(2);
 var warning = __webpack_require__(3);
 
@@ -26778,7 +26778,7 @@ module.exports = function(iter, ITERATOR){
 
 var aFunction = __webpack_require__(19)
   , toObject  = __webpack_require__(17)
-  , IObject   = __webpack_require__(68)
+  , IObject   = __webpack_require__(69)
   , toLength  = __webpack_require__(15);
 
 module.exports = function(that, callbackfn, aLen, memo, isRight){
@@ -26988,7 +26988,7 @@ module.exports = {
 /***/ (function(module, exports, __webpack_require__) {
 
 // https://github.com/DavidBruant/Map-Set.prototype.toJSON
-var classof = __webpack_require__(67)
+var classof = __webpack_require__(68)
   , from    = __webpack_require__(146);
 module.exports = function(NAME){
   return function toJSON(){
@@ -27148,9 +27148,9 @@ module.exports = Math.log1p || function log1p(x){
 // 19.1.2.1 Object.assign(target, source, ...)
 var getKeys  = __webpack_require__(51)
   , gOPS     = __webpack_require__(84)
-  , pIE      = __webpack_require__(69)
+  , pIE      = __webpack_require__(70)
   , toObject = __webpack_require__(17)
-  , IObject  = __webpack_require__(68)
+  , IObject  = __webpack_require__(69)
   , $assign  = Object.assign;
 
 // should work with symbols and should have deterministic property order (V8 bug)
@@ -27249,7 +27249,7 @@ module.exports = function(object, names){
 
 var getKeys   = __webpack_require__(51)
   , toIObject = __webpack_require__(23)
-  , isEnum    = __webpack_require__(69).f;
+  , isEnum    = __webpack_require__(70).f;
 module.exports = function(isEntries){
   return function(it){
     var O      = toIObject(it)
@@ -28671,14 +28671,14 @@ var ReactDOMComponentTree = __webpack_require__(13);
 var ReactDOMContainerInfo = __webpack_require__(422);
 var ReactDOMFeatureFlags = __webpack_require__(424);
 var ReactFeatureFlags = __webpack_require__(182);
-var ReactInstanceMap = __webpack_require__(73);
+var ReactInstanceMap = __webpack_require__(74);
 var ReactInstrumentation = __webpack_require__(27);
 var ReactMarkupChecksum = __webpack_require__(444);
 var ReactReconciler = __webpack_require__(65);
 var ReactUpdateQueue = __webpack_require__(128);
 var ReactUpdates = __webpack_require__(35);
 
-var emptyObject = __webpack_require__(70);
+var emptyObject = __webpack_require__(71);
 var instantiateReactComponent = __webpack_require__(193);
 var invariant = __webpack_require__(2);
 var setInnerHTML = __webpack_require__(93);
@@ -31009,7 +31009,7 @@ var _AddContent = __webpack_require__(203);
 
 var _AddContent2 = _interopRequireDefault(_AddContent);
 
-var _utils = __webpack_require__(75);
+var _utils = __webpack_require__(67);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -31045,7 +31045,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    console.log(3); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
     return _this;
   }
 
@@ -31274,13 +31274,19 @@ var _react = __webpack_require__(14);
 
 var _react2 = _interopRequireDefault(_react);
 
-var _utils = __webpack_require__(75);
+var _reactDom = __webpack_require__(175);
+
+var _reactDom2 = _interopRequireDefault(_reactDom);
+
+var _utils = __webpack_require__(67);
 
 var _reactTagAutocomplete = __webpack_require__(479);
 
 var _reactTagAutocomplete2 = _interopRequireDefault(_reactTagAutocomplete);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
@@ -31315,16 +31321,33 @@ var AskToAnswer = function (_React$Component) {
     value: function componentDidMount() {
       this.props.resize();
       this.populateSuggestions();
+      this.node = _reactDom2.default.findDOMNode(this);
+      this.hackilyFixAskToAnswer();
     }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate() {
       this.props.resize();
     }
+
+    // may be fixed by https://github.com/i-like-robots/react-tags/issues/52, which addresses https://github.com/i-like-robots/react-tags/issues/52
+    // TODO: fork repo and apply PR, or wait for repo to accept PR
+
+  }, {
+    key: 'hackilyFixAskToAnswer',
+    value: function hackilyFixAskToAnswer() {
+      var _this2 = this;
+
+      setTimeout(function () {
+        // wait for event loop to turn
+        var input = _this2.node.querySelector('.react-tags__search-input input');
+        input.style.width = '302px';
+      }, 0);
+    }
   }, {
     key: 'populateSuggestions',
     value: function populateSuggestions() {
-      var _this2 = this;
+      var _this3 = this;
 
       Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
         var token = values[0],
@@ -31341,35 +31364,45 @@ var AskToAnswer = function (_React$Component) {
               name: user.first_name + ' ' + user.last_name
             };
           });
-          _this2.setState({ suggestions: users });
+          _this3.setState({ suggestions: users });
         });
       });
     }
   }, {
     key: 'handleDelete',
     value: function handleDelete(i) {
-      var tags = this.state.tags.slice(0);
-      tags.splice(i, 1);
-      this.setState({ tags: tags });
+      var tags = this.state.tags.slice(0),
+          removedTag = tags.splice(i, 1)[0];
+      this.setState({
+        suggestions: [].concat(_toConsumableArray(this.state.suggestions), [removedTag]), // add the removed tag back to the suggestions list
+        tags: tags
+      });
     }
   }, {
     key: 'handleAddition',
     value: function handleAddition(tag) {
-      var tags = this.state.tags.concat(tag);
-      this.setState({ tags: tags });
+      var tags = this.state.tags.concat(tag),
+          suggestions = _.reject(this.state.suggestions, function (suggestion) {
+        return suggestion.id === tag.id;
+      }); // remove the tag from the suggestion list so it can't be added twice
+      this.setState({
+        suggestions: suggestions,
+        tags: tags
+      });
     }
   }, {
     key: 'render',
     value: function render() {
+      var classNames = { root: 'react-tags last-field' };
       return _react2.default.createElement(_reactTagAutocomplete2.default, { tags: this.state.tags,
         suggestions: this.state.suggestions,
         placeholder: 'Ask member to answer (optional)',
         autofocus: false,
         minQueryLength: 1,
-        maxSuggestionsLength: 3,
+        maxSuggestionsLength: 1,
         handleAddition: this.handleAddition,
         handleDelete: this.handleDelete,
-        className: 'last-field' });
+        classNames: classNames });
     }
   }]);
 
@@ -31690,7 +31723,7 @@ var _lodash = __webpack_require__(87);
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
-var _utils = __webpack_require__(75);
+var _utils = __webpack_require__(67);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
@@ -31928,7 +31961,7 @@ var _lodash = __webpack_require__(87);
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
-var _utils = __webpack_require__(75);
+var _utils = __webpack_require__(67);
 
 var _AskToAnswer = __webpack_require__(205);
 
@@ -32179,7 +32212,7 @@ var _lodash = __webpack_require__(87);
 
 var _lodash2 = _interopRequireDefault(_lodash);
 
-var _utils = __webpack_require__(75);
+var _utils = __webpack_require__(67);
 
 var _LinkList = __webpack_require__(143);
 
@@ -32527,7 +32560,7 @@ module.exports = function(hint){
 // all enumerable object keys, includes symbols
 var getKeys = __webpack_require__(51)
   , gOPS    = __webpack_require__(84)
-  , pIE     = __webpack_require__(69);
+  , pIE     = __webpack_require__(70);
 module.exports = function(it){
   var result     = getKeys(it)
     , getSymbols = gOPS.f;
@@ -32787,7 +32820,7 @@ var $export   = __webpack_require__(0)
   , arrayJoin = [].join;
 
 // fallback for not array-like strings
-$export($export.P + $export.F * (__webpack_require__(68) != Object || !__webpack_require__(30)(arrayJoin)), 'Array', {
+$export($export.P + $export.F * (__webpack_require__(69) != Object || !__webpack_require__(30)(arrayJoin)), 'Array', {
   join: function join(separator){
     return arrayJoin.call(toIObject(this), separator === undefined ? ',' : separator);
   }
@@ -33908,7 +33941,7 @@ $export($export.S, 'Object', {setPrototypeOf: __webpack_require__(108).set});
 "use strict";
 
 // 19.1.3.6 Object.prototype.toString()
-var classof = __webpack_require__(67)
+var classof = __webpack_require__(68)
   , test    = {};
 test[__webpack_require__(9)('toStringTag')] = 'z';
 if(test + '' != '[object z]'){
@@ -33944,7 +33977,7 @@ $export($export.G + $export.F * (parseInt != $parseInt), {parseInt: $parseInt});
 var LIBRARY            = __webpack_require__(48)
   , global             = __webpack_require__(5)
   , ctx                = __webpack_require__(37)
-  , classof            = __webpack_require__(67)
+  , classof            = __webpack_require__(68)
   , $export            = __webpack_require__(0)
   , isObject           = __webpack_require__(8)
   , aFunction          = __webpack_require__(19)
@@ -35265,7 +35298,7 @@ if(!USE_NATIVE){
   $GOPD.f = $getOwnPropertyDescriptor;
   $DP.f   = $defineProperty;
   __webpack_require__(50).f = gOPNExt.f = $getOwnPropertyNames;
-  __webpack_require__(69).f  = $propertyIsEnumerable;
+  __webpack_require__(70).f  = $propertyIsEnumerable;
   __webpack_require__(84).f = $getOwnPropertySymbols;
 
   if(DESCRIPTORS && !__webpack_require__(48)){
@@ -36366,7 +36399,7 @@ exports = module.exports = __webpack_require__(392)();
 
 
 // module
-exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput {\n  outline: none;\n}\ntextarea,\ninput[type=text] {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-family: inherit;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.content-box {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n  overflow-y: auto;\n  max-height: 105px;\n}\n.content-box li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.content-box li .icon-link-container {\n  display: inline-block;\n  margin-right: 4px;\n}\n.content-box li .icon-link,\n.content-box li .icon-broken-link {\n  width: 12px;\n  height: 12px;\n  cursor: pointer;\n}\n.content-box a {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  display: inline-block;\n  vertical-align: middle;\n  max-width: 100%;\n}\n.content-box .public ~ a {\n  max-width: 263px;\n}\n.content-box .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link,\n.icon-broken-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n  cursor: pointer;\n}\ninput[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\ninput[type=submit]:hover {\n  background-color: #d0513c;\n}\ninput[type=submit]:active {\n  background-color: #b94835;\n}\ninput[type=submit].processing {\n  background-color: #47af3a;\n}\n.invalid {\n  border-color: #e85b43 !important;\n  background-color: rgba(232, 91, 67, 0.1) !important;\n}\n.invalid::-webkit-input-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid::-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-ms-input-placeholder {\n  color: #e85b43 !important;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search .message {\n  font-size: 12px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .content-box {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search li:hover {\n  background-color: #eceaec;\n}\nsection.search li:hover a {\n  font-weight: 600;\n}\nsection.search li:hover .icon-link {\n  visibility: visible;\n}\nsection.search li .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n  visibility: hidden;\n}\nsection.search li .icon-link:hover,\nsection.search li .icon-link:active {\n  opacity: 0.5;\n}\nsection.search a {\n  color: inherit;\n}\nsection.search .public {\n  color: #7d7c7d;\n}\nsection.linked-resources .no-linked-resources {\n  text-align: center;\n  margin: -5px 0;\n}\nsection.linked-resources .message {\n  color: #317887;\n}\nsection.linked-resources .instructions {\n  color: #737272;\n  font-size: 9px;\n  margin-top: -4px;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 9px;\n  height: 9px;\n  fill: #737272;\n  position: relative;\n  top: -1px;\n  margin: 0 2px 0 1px;\n}\nsection.linked-resources .content-box {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources li:hover a {\n  color: #317887;\n}\nsection.linked-resources li:hover .icon-link {\n  fill: #317887;\n}\nsection.linked-resources li .icon-link {\n  fill: #3fb8cd;\n}\nsection.linked-resources li .icon-broken-link {\n  display: none;\n  fill: #317887;\n}\nsection.linked-resources .icon-link-container:hover .icon-link,\nsection.linked-resources .icon-link-container:active .icon-link {\n  display: none;\n}\nsection.linked-resources .icon-link-container:hover .icon-broken-link,\nsection.linked-resources .icon-link-container:active .icon-broken-link {\n  display: inline-block;\n}\nsection.linked-resources a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.linked-resources .public {\n  color: #61C4d6;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form:before,\nsection.add-content form:after {\n  content: ' ';\n  display: table;\n}\nsection.add-content form:after {\n  clear: both;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea {\n  margin-bottom: 11px;\n}\nsection.add-content input[type=text].last-field,\nsection.add-content textarea.last-field {\n  margin-bottom: 9px;\n}\nsection.add-content .link-to-ticket {\n  float: left;\n  font-size: 11px;\n  color: #666;\n  margin-top: 3px;\n}\nsection.add-content .link-to-ticket input {\n  margin-right: 8px;\n}\nsection.add-content .react-tags {\n  position: relative;\n  padding: 6px 0 0 6px;\n  border: 1px solid #D1D1D1;\n  border-radius: 1px;\n  font-size: 1em;\n  line-height: 1.2;\n  cursor: text;\n}\nsection.add-content .react-tags.is-focused {\n  border-color: #B1B1B1;\n}\nsection.add-content .react-tags__selected {\n  display: inline;\n}\nsection.add-content .react-tags__selected-tag {\n  display: inline-block;\n  box-sizing: border-box;\n  margin: 0 6px 6px 0;\n  padding: 6px 8px;\n  border: 1px solid #D1D1D1;\n  border-radius: 2px;\n  background: #F1F1F1;\n  font-size: inherit;\n  line-height: inherit;\n}\nsection.add-content .react-tags__selected-tag:after {\n  content: '\\2715';\n  color: #AAA;\n  margin-left: 8px;\n}\nsection.add-content .react-tags__selected-tag:hover,\nsection.add-content .react-tags__selected-tag:focus {\n  border-color: #B1B1B1;\n}\nsection.add-content .react-tags__search {\n  display: inline-block;\n  padding: 7px 2px;\n  margin-bottom: 6px;\n  max-width: 100%;\n}\nsection.add-content .react-tags__search input {\n  max-width: 100%;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  outline: none;\n  font-size: inherit;\n  line-height: inherit;\n}\nsection.add-content .react-tags__search input::-ms-clear {\n  display: none;\n}\nsection.add-content .react-tags__suggestions {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  width: 100%;\n}\nsection.add-content .react-tags__suggestions ul {\n  margin: 4px -1px;\n  padding: 0;\n  list-style: none;\n  background: white;\n  border: 1px solid #D1D1D1;\n  border-radius: 2px;\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);\n}\nsection.add-content .react-tags__suggestions li {\n  border-bottom: 1px solid #ddd;\n  padding: 6px 8px;\n}\nsection.add-content .react-tags__suggestions li:hover {\n  cursor: pointer;\n  background: #eee;\n}\nsection.add-content .react-tags__suggestions li.is-active {\n  background: #b7cfe0;\n}\nsection.add-content .react-tags__suggestions li.is-disabled {\n  opacity: 0.5;\n  cursor: auto;\n}\nsection.add-content .react-tags__suggestions li mark {\n  text-decoration: underline;\n  background: none;\n  font-weight: 600;\n}\n", ""]);
+exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput,\nbutton {\n  outline: none !important;\n}\ntextarea,\ninput[type=text],\n.react-tags {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-family: inherit;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder,\n.react-tags::-webkit-input-placeholder,\ntextarea ::-webkit-input-placeholder,\ninput[type=text] ::-webkit-input-placeholder,\n.react-tags ::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder,\n.react-tags:-moz-placeholder,\ntextarea :-moz-placeholder,\ninput[type=text] :-moz-placeholder,\n.react-tags :-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder,\n.react-tags::-moz-placeholder,\ntextarea ::-moz-placeholder,\ninput[type=text] ::-moz-placeholder,\n.react-tags ::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder,\n.react-tags:-ms-input-placeholder,\ntextarea :-ms-input-placeholder,\ninput[type=text] :-ms-input-placeholder,\n.react-tags :-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.content-box {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n  overflow-y: auto;\n  max-height: 105px;\n}\n.content-box li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.content-box li .icon-link-container {\n  display: inline-block;\n  margin-right: 4px;\n}\n.content-box li .icon-link,\n.content-box li .icon-broken-link {\n  width: 12px;\n  height: 12px;\n  cursor: pointer;\n}\n.content-box a {\n  overflow: hidden;\n  white-space: nowrap;\n  text-overflow: ellipsis;\n  display: inline-block;\n  vertical-align: middle;\n  max-width: 100%;\n}\n.content-box .public ~ a {\n  max-width: 263px;\n}\n.content-box .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link,\n.icon-broken-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n  cursor: pointer;\n}\ninput[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\ninput[type=submit]:hover {\n  background-color: #d0513c;\n}\ninput[type=submit]:active {\n  background-color: #b94835;\n}\ninput[type=submit].processing {\n  background-color: #47af3a;\n}\n.invalid {\n  border-color: #e85b43 !important;\n  background-color: rgba(232, 91, 67, 0.1) !important;\n}\n.invalid::-webkit-input-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid::-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-ms-input-placeholder {\n  color: #e85b43 !important;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search .message {\n  font-size: 12px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .content-box {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search li:hover {\n  background-color: #eceaec;\n}\nsection.search li:hover a {\n  font-weight: 600;\n}\nsection.search li:hover .icon-link {\n  visibility: visible;\n}\nsection.search li .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n  visibility: hidden;\n}\nsection.search li .icon-link:hover,\nsection.search li .icon-link:active {\n  opacity: 0.5;\n}\nsection.search a {\n  color: inherit;\n}\nsection.search .public {\n  color: #7d7c7d;\n}\nsection.linked-resources .no-linked-resources {\n  text-align: center;\n  margin: -5px 0;\n}\nsection.linked-resources .message {\n  color: #317887;\n}\nsection.linked-resources .instructions {\n  color: #737272;\n  font-size: 9px;\n  margin-top: -4px;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 9px;\n  height: 9px;\n  fill: #737272;\n  position: relative;\n  top: -1px;\n  margin: 0 2px 0 1px;\n}\nsection.linked-resources .content-box {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources li:hover a {\n  color: #317887;\n}\nsection.linked-resources li:hover .icon-link {\n  fill: #317887;\n}\nsection.linked-resources li .icon-link {\n  fill: #3fb8cd;\n}\nsection.linked-resources li .icon-broken-link {\n  display: none;\n  fill: #317887;\n}\nsection.linked-resources .icon-link-container:hover .icon-link,\nsection.linked-resources .icon-link-container:active .icon-link {\n  display: none;\n}\nsection.linked-resources .icon-link-container:hover .icon-broken-link,\nsection.linked-resources .icon-link-container:active .icon-broken-link {\n  display: inline-block;\n}\nsection.linked-resources a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.linked-resources .public {\n  color: #61C4d6;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form:before,\nsection.add-content form:after {\n  content: ' ';\n  display: table;\n}\nsection.add-content form:after {\n  clear: both;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea,\nsection.add-content .react-tags {\n  margin-bottom: 11px;\n}\nsection.add-content input[type=text].last-field,\nsection.add-content textarea.last-field,\nsection.add-content .react-tags.last-field {\n  margin-bottom: 9px;\n}\nsection.add-content .link-to-ticket {\n  float: left;\n  font-size: 11px;\n  color: #666;\n  margin-top: 3px;\n}\nsection.add-content .link-to-ticket input {\n  margin-right: 8px;\n}\nsection.add-content .react-tags {\n  position: relative;\n  cursor: text;\n  padding-bottom: 0;\n  width: auto;\n}\nsection.add-content .react-tags__selected {\n  display: inline;\n}\nsection.add-content .react-tags__selected-tag {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #d1d1d1;\n  display: inline-block;\n  margin: 0 8px 3px 0;\n  padding: 0 4px;\n  background: #f1f1f1;\n  font-family: inherit;\n  font-size: inherit;\n  line-height: 16px;\n}\nsection.add-content .react-tags__selected-tag::after {\n  content: '\\2715';\n  color: #AAA;\n  margin-left: 4px;\n}\nsection.add-content .react-tags__selected-tag:hover,\nsection.add-content .react-tags__selected-tag:focus {\n  border-color: #B1B1B1;\n}\nsection.add-content .react-tags__selected-tag:hover::after,\nsection.add-content .react-tags__selected-tag:focus::after {\n  color: #404040;\n}\nsection.add-content .react-tags__search {\n  display: inline-block;\n  margin-bottom: 3px;\n  max-width: 100%;\n}\nsection.add-content .react-tags__search input {\n  max-width: 100%;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: inherit;\n  font-family: inherit;\n  line-height: inherit;\n}\nsection.add-content .react-tags__search input::-ms-clear {\n  display: none;\n}\nsection.add-content .react-tags__suggestions {\n  position: absolute;\n  top: 100%;\n  left: 0;\n  width: 100%;\n}\nsection.add-content .react-tags__suggestions ul {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  margin: 4px -1px;\n  padding: 0;\n  list-style: none;\n  background: #fff;\n  border: 1px solid #d1d1d1;\n}\nsection.add-content .react-tags__suggestions li {\n  padding: 3px 8px;\n}\nsection.add-content .react-tags__suggestions li:hover {\n  cursor: pointer;\n  background: #efefef;\n}\nsection.add-content .react-tags__suggestions li.is-active {\n  background: #eee;\n}\nsection.add-content .react-tags__suggestions li.is-disabled {\n  opacity: 0.5;\n  cursor: auto;\n}\nsection.add-content .react-tags__suggestions li mark {\n  text-decoration: underline;\n  background: none;\n  font-weight: 600;\n}\n", ""]);
 
 // exports
 
@@ -37289,7 +37322,7 @@ module.exports = AutoFocusUtils;
 
 
 
-var EventPropagators = __webpack_require__(72);
+var EventPropagators = __webpack_require__(73);
 var ExecutionEnvironment = __webpack_require__(16);
 var FallbackCompositionState = __webpack_require__(415);
 var SyntheticCompositionEvent = __webpack_require__(458);
@@ -37894,8 +37927,8 @@ module.exports = CSSPropertyOperations;
 
 
 
-var EventPluginHub = __webpack_require__(71);
-var EventPropagators = __webpack_require__(72);
+var EventPluginHub = __webpack_require__(72);
+var EventPropagators = __webpack_require__(73);
 var ExecutionEnvironment = __webpack_require__(16);
 var ReactDOMComponentTree = __webpack_require__(13);
 var ReactUpdates = __webpack_require__(35);
@@ -38305,7 +38338,7 @@ module.exports = DefaultEventPluginOrder;
 
 
 
-var EventPropagators = __webpack_require__(72);
+var EventPropagators = __webpack_require__(73);
 var ReactDOMComponentTree = __webpack_require__(13);
 var SyntheticMouseEvent = __webpack_require__(90);
 
@@ -38929,7 +38962,7 @@ var React = __webpack_require__(66);
 var ReactComponentEnvironment = __webpack_require__(126);
 var ReactCurrentOwner = __webpack_require__(36);
 var ReactErrorUtils = __webpack_require__(127);
-var ReactInstanceMap = __webpack_require__(73);
+var ReactInstanceMap = __webpack_require__(74);
 var ReactInstrumentation = __webpack_require__(27);
 var ReactNodeTypes = __webpack_require__(186);
 var ReactReconciler = __webpack_require__(65);
@@ -38938,7 +38971,7 @@ if (process.env.NODE_ENV !== 'production') {
   var checkReactTypeSpec = __webpack_require__(467);
 }
 
-var emptyObject = __webpack_require__(70);
+var emptyObject = __webpack_require__(71);
 var invariant = __webpack_require__(2);
 var shallowEqual = __webpack_require__(120);
 var shouldUpdateReactComponent = __webpack_require__(134);
@@ -39958,7 +39991,7 @@ var DOMLazyTree = __webpack_require__(64);
 var DOMNamespaces = __webpack_require__(122);
 var DOMProperty = __webpack_require__(45);
 var DOMPropertyOperations = __webpack_require__(178);
-var EventPluginHub = __webpack_require__(71);
+var EventPluginHub = __webpack_require__(72);
 var EventPluginRegistry = __webpack_require__(88);
 var ReactBrowserEventEmitter = __webpack_require__(89);
 var ReactDOMComponentFlags = __webpack_require__(179);
@@ -43051,7 +43084,7 @@ module.exports = REACT_ELEMENT_TYPE;
 
 
 
-var EventPluginHub = __webpack_require__(71);
+var EventPluginHub = __webpack_require__(72);
 
 function runEventQueueInBatch(events) {
   EventPluginHub.enqueueEvents(events);
@@ -43289,7 +43322,7 @@ module.exports = ReactHostOperationHistoryHook;
 
 
 var DOMProperty = __webpack_require__(45);
-var EventPluginHub = __webpack_require__(71);
+var EventPluginHub = __webpack_require__(72);
 var EventPluginUtils = __webpack_require__(123);
 var ReactComponentEnvironment = __webpack_require__(126);
 var ReactEmptyComponent = __webpack_require__(181);
@@ -43428,7 +43461,7 @@ module.exports = ReactMarkupChecksum;
 var _prodInvariant = __webpack_require__(7);
 
 var ReactComponentEnvironment = __webpack_require__(126);
-var ReactInstanceMap = __webpack_require__(73);
+var ReactInstanceMap = __webpack_require__(74);
 var ReactInstrumentation = __webpack_require__(27);
 
 var ReactCurrentOwner = __webpack_require__(36);
@@ -44857,7 +44890,7 @@ module.exports = SVGDOMPropertyConfig;
 
 
 
-var EventPropagators = __webpack_require__(72);
+var EventPropagators = __webpack_require__(73);
 var ExecutionEnvironment = __webpack_require__(16);
 var ReactDOMComponentTree = __webpack_require__(13);
 var ReactInputSelection = __webpack_require__(184);
@@ -45057,7 +45090,7 @@ module.exports = SelectEventPlugin;
 var _prodInvariant = __webpack_require__(7);
 
 var EventListener = __webpack_require__(172);
-var EventPropagators = __webpack_require__(72);
+var EventPropagators = __webpack_require__(73);
 var ReactDOMComponentTree = __webpack_require__(13);
 var SyntheticAnimationEvent = __webpack_require__(456);
 var SyntheticClipboardEvent = __webpack_require__(457);
@@ -45068,7 +45101,7 @@ var SyntheticMouseEvent = __webpack_require__(90);
 var SyntheticDragEvent = __webpack_require__(459);
 var SyntheticTouchEvent = __webpack_require__(463);
 var SyntheticTransitionEvent = __webpack_require__(464);
-var SyntheticUIEvent = __webpack_require__(74);
+var SyntheticUIEvent = __webpack_require__(75);
 var SyntheticWheelEvent = __webpack_require__(465);
 
 var emptyFunction = __webpack_require__(31);
@@ -45456,7 +45489,7 @@ module.exports = SyntheticDragEvent;
 
 
 
-var SyntheticUIEvent = __webpack_require__(74);
+var SyntheticUIEvent = __webpack_require__(75);
 
 /**
  * @interface FocusEvent
@@ -45539,7 +45572,7 @@ module.exports = SyntheticInputEvent;
 
 
 
-var SyntheticUIEvent = __webpack_require__(74);
+var SyntheticUIEvent = __webpack_require__(75);
 
 var getEventCharCode = __webpack_require__(130);
 var getEventKey = __webpack_require__(471);
@@ -45628,7 +45661,7 @@ module.exports = SyntheticKeyboardEvent;
 
 
 
-var SyntheticUIEvent = __webpack_require__(74);
+var SyntheticUIEvent = __webpack_require__(75);
 
 var getEventModifierState = __webpack_require__(131);
 
@@ -46012,7 +46045,7 @@ var _prodInvariant = __webpack_require__(7);
 
 var ReactCurrentOwner = __webpack_require__(36);
 var ReactDOMComponentTree = __webpack_require__(13);
-var ReactInstanceMap = __webpack_require__(73);
+var ReactInstanceMap = __webpack_require__(74);
 
 var getHostComponentFromComposite = __webpack_require__(191);
 var invariant = __webpack_require__(2);
@@ -47381,7 +47414,7 @@ var ReactElement = __webpack_require__(57);
 var ReactPropTypeLocationNames = __webpack_require__(138);
 var ReactNoopUpdateQueue = __webpack_require__(137);
 
-var emptyObject = __webpack_require__(70);
+var emptyObject = __webpack_require__(71);
 var invariant = __webpack_require__(2);
 var warning = __webpack_require__(3);
 
@@ -48717,7 +48750,7 @@ var _assign = __webpack_require__(10);
 var ReactComponent = __webpack_require__(136);
 var ReactNoopUpdateQueue = __webpack_require__(137);
 
-var emptyObject = __webpack_require__(70);
+var emptyObject = __webpack_require__(71);
 
 /**
  * Base class helpers for the updating state of a component.
