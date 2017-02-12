@@ -4,7 +4,9 @@ import _ from 'lodash';
 
 // standard options for .fetch() requests
 const fetchOpts = {
-  credentials: 'include'
+  credentials: 'include',
+  mode: 'cors',
+  headers: new Headers({ 'Bloomfire-Integration': 'Zendesk 1.0' })
 };
 
 

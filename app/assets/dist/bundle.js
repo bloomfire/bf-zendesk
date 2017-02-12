@@ -4250,7 +4250,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 // standard options for .fetch() requests
 var fetchOpts = {
-  credentials: 'include'
+  credentials: 'include',
+  mode: 'cors',
+  headers: new Headers({ 'Bloomfire-Integration': 'Zendesk 1.0' })
 };
 
 //
