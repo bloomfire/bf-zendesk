@@ -38,7 +38,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
   }
 
   componentDidMount() {
