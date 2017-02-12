@@ -4,12 +4,18 @@
   outline: none !important;
 }
 
+::-ms-clear {
+  width: 0;
+  height: 0;
+}
+
 html {
   text-rendering: optimizeLegibility;
   -webkit-font-feature-settings: 'kern', 'kern';
   font-feature-settings: 'kern', 'kern';
   -webkit-font-kerning: normal;
   font-kerning: normal;
+  overflow: hidden; // potentially fixes CP-42 and CP-57
 }
 
 body {
