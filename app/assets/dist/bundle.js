@@ -4358,12 +4358,12 @@ var capitalizeFirstLetter = function capitalizeFirstLetter(str) {
 };
 
 //
-var trimResource = function trimResource(resource) {
+var trimResource = function trimResource(resourceObj) {
   return {
-    id: resource.id,
-    type: resource.contribution_type,
-    public: resource.public,
-    title: resource.title || resource.question,
+    id: resourceObj.id,
+    type: resourceObj.contribution_type,
+    public: resourceObj.public,
+    title: resourceObj.title || resourceObj.question,
     display: true // set to display initially
   };
 };
@@ -31047,7 +31047,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    console.log(3); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
     return _this;
   }
 
@@ -31059,7 +31059,7 @@ var App = function (_React$Component) {
       this.populateLinkedResources();
     }
 
-    // read linked resources from hidden ticket field and update state
+    // read linked resources from ticket's custom field and update state
 
   }, {
     key: 'populateLinkedResources',
@@ -31070,6 +31070,7 @@ var App = function (_React$Component) {
         var resourcesArr = (0, _utils.decodeLinkedResources)(values[0]),
             domain = values[1].settings.bloomfire_domain;
         (0, _utils.getResources)(_this2.client, resourcesArr).then(function (linkedResources) {
+          console.log(linkedResources);
           linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
           (0, _utils.addHrefs)(domain, linkedResources);
           _this2.setState({ linkedResources: linkedResources });
@@ -32289,23 +32290,26 @@ var Search = function (_React$Component) {
   }, {
     key: 'getSearchResults',
     value: function getSearchResults(query) {
-      var _this2 = this;
-
       return Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
         var token = values[0],
             domain = values[1].settings.bloomfire_domain;
-        return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&session_token=' + token, _utils.fetchOpts).then(function (response) {
+        return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=' + token, _utils.fetchOpts).then(function (response) {
           return response.json();
         }).then(function (results) {
-          var resourcesArr = results.filter(function (result) {
-            return result.type === 'post' || result.type === 'question';
-          }).map(function (result) {
-            return {
-              type: result.type,
-              id: result.instance.id
-            };
-          });
-          return (0, _utils.getResources)(_this2.props.client, resourcesArr);
+          return results.map(function (result) {
+            // move properties of `result.instance` up to properties of `result`
+            var obj = {};
+            for (var key in result.instance) {
+              obj[key] = result.instance[key];
+            }
+            return obj;
+          }).filter(function (result) {
+            return result.contribution_type === 'post' || result.contribution_type === 'question';
+          }) // only keep Posts and Questions
+          .filter(function (result) {
+            return result.published;
+          }) // remove unpublished results
+          .map(_utils.trimResource);
         });
       });
     }
@@ -32318,18 +32322,14 @@ var Search = function (_React$Component) {
   }, {
     key: 'performSearchByQuery',
     value: function performSearchByQuery(query) {
-      var _this3 = this;
+      var _this2 = this;
 
       Promise.all([this.getSearchResults(query), this.props.client.metadata()]).then(function (values) {
-        var results = values[0];
-        var domain = values[1].settings.bloomfire_domain;
-        results = _lodash2.default.filter(results, function (result) {
-          return result.published;
-        }); // remove unpublished results
-        results = results.map(_utils.trimResource); // remove unnecessary properties
+        var results = values[0],
+            domain = values[1].settings.bloomfire_domain;
         (0, _utils.addHrefs)(domain, results);
-        _this3.props.setResults(results);
-        _this3.setState({ processing: false });
+        _this2.props.setResults(results);
+        _this2.setState({ processing: false });
       });
     }
   }, {

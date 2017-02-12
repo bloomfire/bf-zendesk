@@ -38,7 +38,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    console.log(3); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
   }
 
   componentDidMount() {
@@ -47,7 +47,7 @@ class App extends React.Component {
     this.populateLinkedResources();
   }
 
-  // read linked resources from hidden ticket field and update state
+  // read linked resources from ticket's custom field and update state
   populateLinkedResources() {
     Promise.all([
       getResourcesTxtFromCustomField(this.client),
@@ -58,6 +58,7 @@ class App extends React.Component {
               domain = values[1].settings.bloomfire_domain;
         getResources(this.client, resourcesArr)
           .then(linkedResources => {
+            console.log(linkedResources);
             linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
             addHrefs(domain, linkedResources);
             this.setState({ linkedResources });

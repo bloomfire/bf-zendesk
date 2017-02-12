@@ -129,11 +129,11 @@ const capitalizeFirstLetter = (str) => `${str.charAt(0).toUpperCase()}${str.slic
 
 
 //
-const trimResource = (resource) => ({
-  id: resource.id,
-  type: resource.contribution_type,
-  public: resource.public,
-  title: resource.title || resource.question,
+const trimResource = (resourceObj) => ({
+  id: resourceObj.id,
+  type: resourceObj.contribution_type,
+  public: resourceObj.public,
+  title: resourceObj.title || resourceObj.question,
   display: true // set to display initially
 });
 

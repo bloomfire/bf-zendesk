@@ -3,7 +3,6 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import {
   fetchOpts,
-  getResources,
   trimResource,
   getSessionToken,
   getResourceURL,
@@ -56,16 +55,19 @@ class Search extends React.Component {
              .then(values => {
                const token = values[0],
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&session_token=${token}`, fetchOpts)
+               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${token}`, fetchOpts)
                         .then(response => response.json())
                         .then(results => {
-                          const resourcesArr = results
-                                                .filter(result => (result.type === 'post' || result.type === 'question'))
-                                                .map(result => ({
-                                                  type: result.type,
-                                                  id: result.instance.id
-                                                }));
-                          return getResources(this.props.client, resourcesArr);
+                          return results.map(result => { // move properties of `result.instance` up to properties of `result`
+                                   let obj = {};
+                                   for (const key in result.instance) {
+                                     obj[key] = result.instance[key];
+                                   }
+                                   return obj;
+                                 })
+                                 .filter(result => result.contribution_type === 'post' || result.contribution_type === 'question') // only keep Posts and Questions
+                                 .filter(result => result.published) // remove unpublished results
+                                 .map(trimResource);
                         });
              });
   }
@@ -81,10 +83,8 @@ class Search extends React.Component {
       this.props.client.metadata()
     ])
       .then(values => {
-        let results = values[0];
-        const domain = values[1].settings.bloomfire_domain;
-        results = _.filter(results, result => result.published); // remove unpublished results
-        results = results.map(trimResource); // remove unnecessary properties
+        const results = values[0],
+              domain = values[1].settings.bloomfire_domain;
         addHrefs(domain, results);
         this.props.setResults(results);
         this.setState({ processing: false });
