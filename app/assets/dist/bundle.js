@@ -31047,7 +31047,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    console.log(3); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
     return _this;
   }
 
@@ -31070,7 +31070,13 @@ var App = function (_React$Component) {
         var resourcesArr = (0, _utils.decodeLinkedResources)(values[0]),
             domain = values[1].settings.bloomfire_domain;
         (0, _utils.getResources)(_this2.client, resourcesArr).then(function (linkedResources) {
-          console.log(linkedResources);
+          var i = linkedResources.length;
+          while (i--) {
+            // loop backwards since we may slice while iterating
+            if (linkedResources[i].code === 'not_found') {
+              _this2.removeLinkedResourceFromTicket(linkedResources.splice(i, 1)[0]); // remove from ticket data and array
+            }
+          }
           linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
           (0, _utils.addHrefs)(domain, linkedResources);
           _this2.setState({ linkedResources: linkedResources });
@@ -31188,25 +31194,40 @@ var App = function (_React$Component) {
       this.setSearchResultDisplay(resourceObj.id, false);
     }
 
-    //
+    // given a resource object, remove it from the ticket data in Zendesk
 
   }, {
-    key: 'removeLinkedResource',
-    value: function removeLinkedResource(resourceObj) {
+    key: 'removeLinkedResourceFromTicket',
+    value: function removeLinkedResourceFromTicket(resourceObj) {
       var _this6 = this;
 
       this.getResourcesArr().then(function (resourcesArr) {
         resourcesArr = _.reject(resourcesArr, function (resource) {
           return resource.id === resourceObj.id;
         }); // remove the pertinent linked resource
-        return _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourcesArr)); // save the new array of linked resources
-      }).then(function (data) {
-        var linkedResources = _.reject(_this6.state.linkedResources, function (linkedResource) {
-          return linkedResource.id === resourceObj.id;
-        }); // remove the pertinent linekd resource from the UI
-        _this6.setState({ linkedResources: linkedResources });
-        _this6.setSearchResultDisplay(resourceObj.id, true);
+        _this6.updateZendeskTicketCustomField((0, _utils.encodeLinkedResources)(resourcesArr)); // save the new array of linked resources
       });
+    }
+
+    // given a resource object, remove it from the UI
+
+  }, {
+    key: 'removeLinkedResourceFromState',
+    value: function removeLinkedResourceFromState(resourceObj) {
+      var linkedResources = _.reject(this.state.linkedResources, function (linkedResource) {
+        return linkedResource.id === resourceObj.id;
+      });
+      this.setState({ linkedResources: linkedResources });
+      this.setSearchResultDisplay(resourceObj.id, true);
+    }
+
+    //
+
+  }, {
+    key: 'removeLinkedResource',
+    value: function removeLinkedResource(resourceObj) {
+      this.removeLinkedResourceFromTicket(resourceObj);
+      this.removeLinkedResourceFromState(resourceObj);
     }
   }, {
     key: 'applyResize',

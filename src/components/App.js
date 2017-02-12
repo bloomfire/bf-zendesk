@@ -38,7 +38,7 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    console.log(3); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
+    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment out for production
   }
 
   componentDidMount() {
@@ -58,7 +58,12 @@ class App extends React.Component {
               domain = values[1].settings.bloomfire_domain;
         getResources(this.client, resourcesArr)
           .then(linkedResources => {
-            console.log(linkedResources);
+            let i = linkedResources.length;
+            while (i--) { // loop backwards since we may slice while iterating
+              if (linkedResources[i].code === 'not_found') {
+                this.removeLinkedResourceFromTicket(linkedResources.splice(i, 1)[0]); // remove from ticket data and array
+              }
+            }
             linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
             addHrefs(domain, linkedResources);
             this.setState({ linkedResources });
@@ -163,17 +168,27 @@ class App extends React.Component {
     this.setSearchResultDisplay(resourceObj.id, false);
   }
 
-  //
-  removeLinkedResource(resourceObj) {
-    this.getResourcesArr()
+  // given a resource object, remove it from the ticket data in Zendesk
+  removeLinkedResourceFromTicket(resourceObj) {
+    this
+      .getResourcesArr()
       .then(resourcesArr => {
         resourcesArr = _.reject(resourcesArr, resource => resource.id === resourceObj.id); // remove the pertinent linked resource
-        return this.updateZendeskTicketCustomField(encodeLinkedResources(resourcesArr)); // save the new array of linked resources
-      }).then(data => {
-        const linkedResources = _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id); // remove the pertinent linekd resource from the UI
-        this.setState({ linkedResources });
-        this.setSearchResultDisplay(resourceObj.id, true);
+        this.updateZendeskTicketCustomField(encodeLinkedResources(resourcesArr)); // save the new array of linked resources
       });
+  }
+
+  // given a resource object, remove it from the UI
+  removeLinkedResourceFromState(resourceObj) {
+    const linkedResources = _.reject(this.state.linkedResources, linkedResource => linkedResource.id === resourceObj.id);
+    this.setState({ linkedResources });
+    this.setSearchResultDisplay(resourceObj.id, true);
+  }
+
+  //
+  removeLinkedResource(resourceObj) {
+    this.removeLinkedResourceFromTicket(resourceObj)
+    this.removeLinkedResourceFromState(resourceObj);
   };
 
   applyResize() {
