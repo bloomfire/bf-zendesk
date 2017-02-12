@@ -31404,11 +31404,13 @@ var AskToAnswer = function (_React$Component) {
   }, {
     key: 'handleDelete',
     value: function handleDelete(i) {
-      var answerers = this.props.answerers.slice(0),
-          removedAnswerer = answerers.splice(i, 1)[0],
-          suggestions = [].concat(_toConsumableArray(this.state.suggestions), [removedAnswerer]); // add the removed answerer back to the suggestions list
-      this.setState({ suggestions: suggestions });
-      this.props.setAnswerers(answerers);
+      if (i > -1) {
+        var answerers = [].concat(_toConsumableArray(this.props.answerers)),
+            removedAnswerer = answerers.splice(i, 1)[0],
+            suggestions = [].concat(_toConsumableArray(this.state.suggestions), [removedAnswerer]); // add the removed answerer back to the suggestions list
+        this.setState({ suggestions: suggestions });
+        this.props.setAnswerers(answerers);
+      }
     }
   }, {
     key: 'handleAddition',

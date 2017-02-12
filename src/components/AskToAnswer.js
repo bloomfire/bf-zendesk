@@ -72,11 +72,13 @@ class AskToAnswer extends React.Component {
   }
 
   handleDelete(i) {
-    const answerers = this.props.answerers.slice(0),
-          removedAnswerer = answerers.splice(i, 1)[0],
-          suggestions = [...this.state.suggestions, removedAnswerer]; // add the removed answerer back to the suggestions list
-    this.setState({ suggestions });
-    this.props.setAnswerers(answerers);
+    if (i > -1) {
+      const answerers = [...this.props.answerers],
+            removedAnswerer = answerers.splice(i, 1)[0],
+            suggestions = [...this.state.suggestions, removedAnswerer]; // add the removed answerer back to the suggestions list
+      this.setState({ suggestions });
+      this.props.setAnswerers(answerers);
+    }
   }
 
   handleAddition(answerer) {
