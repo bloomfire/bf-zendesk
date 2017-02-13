@@ -4294,7 +4294,7 @@ var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(cli
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
 var getResourceURL = function getResourceURL(domain, type, id, loginToken) {
-  return 'https://' + domain + '/' + type + 's/' + id + '?login=' + loginToken;
+  return 'https://' + domain + '/' + type + 's/' + id + '?token=' + loginToken;
 };
 
 // given a Bloomfire linked resource domain, type and ID, return the API URL for the resource

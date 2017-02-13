@@ -54,7 +54,7 @@ const getResourcesTxtFromCustomField = function (client) {
 
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
-const getResourceURL = (domain, type, id, loginToken) => `https://${domain}/${type}s/${id}?login=${loginToken}`;
+const getResourceURL = (domain, type, id, loginToken) => `https://${domain}/${type}s/${id}?token=${loginToken}`;
 
 
 
