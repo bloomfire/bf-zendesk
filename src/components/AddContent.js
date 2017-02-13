@@ -16,7 +16,7 @@ class AddContent extends React.Component {
     this.initialTabID = '1';
     // state
     this.state = {
-      isCollapsed: false,
+      isCollapsed: true,
       selectedTabID: this.initialTabID
     };
     // bindings

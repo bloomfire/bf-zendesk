@@ -30923,7 +30923,7 @@ var AddContent = function (_React$Component) {
     _this.initialTabID = '1';
     // state
     _this.state = {
-      isCollapsed: false,
+      isCollapsed: true,
       selectedTabID: _this.initialTabID
     };
     // bindings
