@@ -4240,7 +4240,7 @@ module.exports = React;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.showNewTicketMessage = exports.getFromClientTicket = exports.getSessionToken = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = exports.getResourcesTxtFromCustomField = exports.getCustomFieldID = undefined;
+exports.showNewTicketMessage = exports.getFromClientTicket = exports.getTokens = exports.trimResource = exports.capitalizeFirstLetter = exports.getFormDataFromJSON = exports.getBloomfireUserIDByEmail = exports.decodeLinkedResources = exports.decodeLinkedResource = exports.encodeLinkedResources = exports.encodeLinkedResource = exports.getResourceAPIURL = exports.getResourceURL = exports.getResources = exports.fetchOpts = exports.addHrefs = exports.getResourcesTxtFromCustomField = exports.getCustomFieldID = undefined;
 
 var _lodash = __webpack_require__(87);
 
@@ -4293,8 +4293,8 @@ var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(cli
 };
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
-var getResourceURL = function getResourceURL(domain, type, id) {
-  return 'https://' + domain + '/' + type + 's/' + id;
+var getResourceURL = function getResourceURL(domain, type, id, loginToken) {
+  return 'https://' + domain + '/' + type + 's/' + id + '?login=' + loginToken;
 };
 
 // given a Bloomfire linked resource domain, type and ID, return the API URL for the resource
@@ -4332,10 +4332,10 @@ var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
 
 // given a Zendesk user's email, match it to their Bloomfire email and get their Bloomfire ID
 var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email) {
-  return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
-    var token = values[0],
+  return Promise.all([getTokens(client), client.metadata()]).then(function (values) {
+    var sessionToken = values[0].sessionToken,
         domain = values[1].settings.bloomfire_domain;
-    return fetch('https://' + domain + '/api/v2/users?fields=email,id&session_token=' + token, fetchOpts).then(function (response) {
+    return fetch('https://' + domain + '/api/v2/users?fields=email,id&session_token=' + sessionToken, fetchOpts).then(function (response) {
       return response.json();
     }).then(function (users) {
       return _lodash2.default.result(_lodash2.default.find(users, function (user) {
@@ -4371,10 +4371,10 @@ var trimResource = function trimResource(resourceObj) {
 };
 
 //
-var sessionToken = void 0;
-var getSessionToken = function getSessionToken(client) {
-  if (sessionToken) {
-    return Promise.resolve(sessionToken);
+var tokens = {};
+var getTokens = function getTokens(client) {
+  if (tokens.sessionToken && tokens.loginToken) {
+    return tokens;
   } else {
     return Promise.all([client.get('currentUser.email') // get current user's email via Zendesk client SDK
     .then(function (data) {
@@ -4384,13 +4384,14 @@ var getSessionToken = function getSessionToken(client) {
       var email = values[0],
           domain = values[1].settings.bloomfire_domain,
           key = values[1].settings.bloomfire_api_key;
-      return fetch('https://' + domain + '/api/v2/login?email=' + encodeURIComponent(email) + '&api_key=' + key).then(function (data) {
+      return fetch('https://' + domain + '/api/v2/login?email=' + encodeURIComponent(email) + '&api_key=' + key + '&fields=session_token,login_token').then(function (data) {
         return data.json();
       }).then(function (data) {
-        if (typeof sessionToken === 'undefined') {
-          sessionToken = data.session_token;
-        }
-        return data.session_token;
+        tokens = {
+          sessionToken: data.session_token,
+          loginToken: data.login_token
+        };
+        return tokens;
       });
     });
   }
@@ -4420,11 +4421,11 @@ var getFromClientTicket = function getFromClientTicket(client) {
 
 // given an array of Bloomfire resource API URLs, return a promise of response data
 var getResources = function getResources(client, resourcesArr) {
-  return Promise.all([getSessionToken(client), client.metadata()]).then(function (values) {
-    var token = values[0],
+  return Promise.all([getTokens(client), client.metadata()]).then(function (values) {
+    var sessionToken = values[0].sessionToken,
         domain = values[1].settings.bloomfire_domain,
         resourceReqs = resourcesArr.map(function (resource) {
-      return fetch(getResourceAPIURL(domain, resource.type, resource.id) + '?session_token=' + token, fetchOpts).then(function (response) {
+      return fetch(getResourceAPIURL(domain, resource.type, resource.id) + '?session_token=' + sessionToken, fetchOpts).then(function (response) {
         return response.json();
       });
     });
@@ -4443,9 +4444,9 @@ var showNewTicketMessage = function showNewTicketMessage(client, type, id) {
 };
 
 // build and append href values to resources
-var addHrefs = function addHrefs(domain, resourcesArr) {
+var addHrefs = function addHrefs(domain, resourcesArr, loginToken) {
   resourcesArr.forEach(function (resourceObj) {
-    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
+    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id, loginToken);
   });
 };
 
@@ -4464,7 +4465,7 @@ exports.getBloomfireUserIDByEmail = getBloomfireUserIDByEmail;
 exports.getFormDataFromJSON = getFormDataFromJSON;
 exports.capitalizeFirstLetter = capitalizeFirstLetter;
 exports.trimResource = trimResource;
-exports.getSessionToken = getSessionToken;
+exports.getTokens = getTokens;
 exports.getFromClientTicket = getFromClientTicket;
 exports.showNewTicketMessage = showNewTicketMessage;
 
@@ -30193,6 +30194,8 @@ var _reactDom = __webpack_require__(121);
 
 var _reactDom2 = _interopRequireDefault(_reactDom);
 
+var _utils = __webpack_require__(67);
+
 var _App = __webpack_require__(204);
 
 var _App2 = _interopRequireDefault(_App);
@@ -30203,10 +30206,18 @@ var _index2 = _interopRequireDefault(_index);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
+// console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
+
+
 // components
-_reactDom2.default.render(_react2.default.createElement(_App2.default, null), document.getElementById('app'));
+var client = ZAFClient.init();
 
 // styles
+
+
+(0, _utils.getTokens)(client).then(function (tokens) {
+  _reactDom2.default.render(_react2.default.createElement(_App2.default, { client: client }), document.getElementById('app'));
+});
 
 /***/ }),
 /* 201 */
@@ -31036,7 +31047,6 @@ var App = function (_React$Component) {
 
     var _this = _possibleConstructorReturn(this, (App.__proto__ || Object.getPrototypeOf(App)).call(this, props));
 
-    _this.client = ZAFClient.init();
     _this.resizeInterval = null;
     // state
     _this.state = {
@@ -31049,7 +31059,6 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
     return _this;
   }
 
@@ -31068,10 +31077,11 @@ var App = function (_React$Component) {
     value: function populateLinkedResources() {
       var _this2 = this;
 
-      Promise.all([(0, _utils.getResourcesTxtFromCustomField)(this.client), this.client.metadata()]).then(function (values) {
+      Promise.all([(0, _utils.getResourcesTxtFromCustomField)(this.props.client), this.props.client.metadata(), (0, _utils.getTokens)(this.props.client)]).then(function (values) {
         var resourcesArr = (0, _utils.decodeLinkedResources)(values[0]),
-            domain = values[1].settings.bloomfire_domain;
-        (0, _utils.getResources)(_this2.client, resourcesArr).then(function (linkedResources) {
+            domain = values[1].settings.bloomfire_domain,
+            loginToken = values[2].loginToken;
+        (0, _utils.getResources)(_this2.props.client, resourcesArr).then(function (linkedResources) {
           var i = linkedResources.length;
           while (i--) {
             // loop backwards since we may slice while iterating
@@ -31080,7 +31090,7 @@ var App = function (_React$Component) {
             }
           }
           linkedResources = linkedResources.map(_utils.trimResource); // remove unnecessary properties
-          (0, _utils.addHrefs)(domain, linkedResources);
+          (0, _utils.addHrefs)(domain, linkedResources, loginToken);
           _this2.setState({ linkedResources: linkedResources });
         });
       });
@@ -31112,10 +31122,10 @@ var App = function (_React$Component) {
     value: function updateZendeskTicketCustomField(value) {
       var _this4 = this;
 
-      return Promise.all([(0, _utils.getCustomFieldID)(this.client), (0, _utils.getFromClientTicket)(this.client, 'id')]).then(function (values) {
+      return Promise.all([(0, _utils.getCustomFieldID)(this.props.client), (0, _utils.getFromClientTicket)(this.props.client, 'id')]).then(function (values) {
         var customFieldID = values[0],
             ticketID = values[1].id;
-        return _this4.client.request({
+        return _this4.props.client.request({
           url: '/api/v2/tickets/' + ticketID + '.json',
           type: 'PUT',
           dataType: 'json',
@@ -31134,7 +31144,7 @@ var App = function (_React$Component) {
   }, {
     key: 'getResourcesArr',
     value: function getResourcesArr() {
-      return (0, _utils.getResourcesTxtFromCustomField)(this.client).then(function (resourcesTxt) {
+      return (0, _utils.getResourcesTxtFromCustomField)(this.props.client).then(function (resourcesTxt) {
         return (0, _utils.decodeLinkedResources)(resourcesTxt);
       });
     }
@@ -31167,7 +31177,7 @@ var App = function (_React$Component) {
     value: function createLinkedResource(resourceObj) {
       var _this5 = this;
 
-      Promise.all([this.getResourcesArr(), this.client.metadata()]).then(function (values) {
+      Promise.all([this.getResourcesArr(), this.props.client.metadata()]).then(function (values) {
         var resourcesArr = values[0],
             domain = values[1].settings.bloomfire_domain,
             linkedResources = [].concat(_toConsumableArray(_this5.state.linkedResources), [{
@@ -31237,7 +31247,7 @@ var App = function (_React$Component) {
       var currentHeight = this.node.clientHeight;
       if (currentHeight !== this.lastHeight) {
         this.lastHeight = currentHeight;
-        this.client.invoke('resize', {
+        this.props.client.invoke('resize', {
           width: '100%',
           height: currentHeight + 1 + 'px' // add 1px to make Firefox happy
         });
@@ -31261,17 +31271,17 @@ var App = function (_React$Component) {
       return _react2.default.createElement(
         'main',
         null,
-        _react2.default.createElement(_Search2.default, { client: this.client,
+        _react2.default.createElement(_Search2.default, { client: this.props.client,
           resize: this.resize,
           results: this.state.searchResults,
           setResults: this.setSearchResults,
           addLinkedResource: this.addLinkedResource }),
-        _react2.default.createElement(_LinkedResources2.default, { client: this.client,
+        _react2.default.createElement(_LinkedResources2.default, { client: this.props.client,
           resize: this.resize,
           links: this.state.linkedResources,
           hasSearchResults: this.state.searchResults.length > 0,
           removeLinkedResource: this.removeLinkedResource }),
-        _react2.default.createElement(_AddContent2.default, { client: this.client,
+        _react2.default.createElement(_AddContent2.default, { client: this.props.client,
           resize: this.resize,
           createLinkedResource: this.createLinkedResource })
       );
@@ -31374,16 +31384,16 @@ var AskToAnswer = function (_React$Component) {
     value: function populateSuggestions() {
       var _this3 = this;
 
-      Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata(), this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
+      Promise.all([(0, _utils.getTokens)(this.props.client), this.props.client.metadata(), this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
       .then(function (data) {
         return data['currentUser.email'];
       }) // extract the returned property
       .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
       ]).then(function (values) {
-        var token = values[0],
+        var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain,
             currentUserID = values[2];
-        fetch('https://' + domain + '/api/v2/users?fields=active,id,first_name,last_name&session_token=' + token, _utils.fetchOpts).then(function (response) {
+        fetch('https://' + domain + '/api/v2/users?fields=active,id,first_name,last_name&session_token=' + sessionToken, _utils.fetchOpts).then(function (response) {
           return response.json();
         }).then(function (users) {
           _this3.props.setCurrentUserID(currentUserID); // pass current user ID upstream to avoid an extra API request
@@ -31824,10 +31834,10 @@ var Post = function (_React$Component) {
     value: function submitForm(userID) {
       var _this2 = this;
 
-      return Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
-        var token = values[0],
+      return Promise.all([(0, _utils.getTokens)(this.props.client), this.props.client.metadata()]).then(function (values) {
+        var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain;
-        return fetch('https://' + domain + '/api/v2/posts?session_token=' + token, _lodash2.default.merge({}, _utils.fetchOpts, {
+        return fetch('https://' + domain + '/api/v2/posts?session_token=' + sessionToken, _lodash2.default.merge({}, _utils.fetchOpts, {
           method: 'POST',
           body: (0, _utils.getFormDataFromJSON)({
             author: userID,
@@ -32072,10 +32082,10 @@ var Question = function (_React$Component) {
     value: function submitForm(currentUserID) {
       var _this2 = this;
 
-      return Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
-        var token = values[0],
+      return Promise.all([(0, _utils.getTokens)(this.props.client), this.props.client.metadata()]).then(function (values) {
+        var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain;
-        return fetch('https://' + domain + '/api/v2/questions?session_token=' + token, _lodash2.default.merge({}, _utils.fetchOpts, {
+        return fetch('https://' + domain + '/api/v2/questions?session_token=' + sessionToken, _lodash2.default.merge({}, _utils.fetchOpts, {
           method: 'POST',
           body: (0, _utils.getFormDataFromJSON)({
             author: currentUserID,
@@ -32093,10 +32103,10 @@ var Question = function (_React$Component) {
       var answererIDs = this.state.answerers.map(function (answerer) {
         return answerer.id;
       });
-      return Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
-        var token = values[0],
+      return Promise.all([(0, _utils.getTokens)(this.props.client), this.props.client.metadata()]).then(function (values) {
+        var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain;
-        return fetch('https://' + domain + '/api/v2/questions/' + questionID + '/ask_to_answer?session_token=' + token, _lodash2.default.merge({}, _utils.fetchOpts, {
+        return fetch('https://' + domain + '/api/v2/questions/' + questionID + '/ask_to_answer?session_token=' + sessionToken, _lodash2.default.merge({}, _utils.fetchOpts, {
           method: 'POST',
           body: (0, _utils.getFormDataFromJSON)({ ask_to_answer_ids: answererIDs })
         }));
@@ -32315,10 +32325,10 @@ var Search = function (_React$Component) {
   }, {
     key: 'getSearchResults',
     value: function getSearchResults(query) {
-      return Promise.all([(0, _utils.getSessionToken)(this.props.client), this.props.client.metadata()]).then(function (values) {
-        var token = values[0],
+      return Promise.all([(0, _utils.getTokens)(this.props.client), this.props.client.metadata()]).then(function (values) {
+        var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain;
-        return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=' + token, _utils.fetchOpts).then(function (response) {
+        return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=' + sessionToken, _utils.fetchOpts).then(function (response) {
           return response.json();
         }).then(function (results) {
           return results.map(function (result) {
@@ -32349,10 +32359,11 @@ var Search = function (_React$Component) {
     value: function performSearchByQuery(query) {
       var _this2 = this;
 
-      Promise.all([this.getSearchResults(query), this.props.client.metadata()]).then(function (values) {
+      Promise.all([this.getSearchResults(query), this.props.client.metadata(), (0, _utils.getTokens)(this.props.client)]).then(function (values) {
         var results = values[0],
-            domain = values[1].settings.bloomfire_domain;
-        (0, _utils.addHrefs)(domain, results);
+            domain = values[1].settings.bloomfire_domain,
+            loginToken = values[2].loginToken;
+        (0, _utils.addHrefs)(domain, results, loginToken);
         _this2.props.setResults(results);
         _this2.setState({ processing: false });
       });

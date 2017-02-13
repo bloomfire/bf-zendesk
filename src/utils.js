@@ -54,7 +54,7 @@ const getResourcesTxtFromCustomField = function (client) {
 
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
-const getResourceURL = (domain, type, id) => `https://${domain}/${type}s/${id}`;
+const getResourceURL = (domain, type, id, loginToken) => `https://${domain}/${type}s/${id}?login=${loginToken}`;
 
 
 
@@ -98,13 +98,13 @@ const decodeLinkedResources = function (resourcesTxt) {
 // given a Zendesk user's email, match it to their Bloomfire email and get their Bloomfire ID
 const getBloomfireUserIDByEmail = function (client, email) {
   return Promise.all([
-           getSessionToken(client),
+           getTokens(client),
            client.metadata()
          ])
            .then(function (values) {
-             const token = values[0],
+             const sessionToken = values[0].sessionToken,
                    domain = values[1].settings.bloomfire_domain;
-             return fetch(`https://${domain}/api/v2/users?fields=email,id&session_token=${token}`, fetchOpts)
+             return fetch(`https://${domain}/api/v2/users?fields=email,id&session_token=${sessionToken}`, fetchOpts)
                       .then(response => response.json())
                       .then(users => {
                         return _.result(_.find(users, user => {
@@ -142,10 +142,10 @@ const trimResource = (resourceObj) => ({
 
 
 //
-let sessionToken;
-const getSessionToken = function (client) {
-  if (sessionToken) {
-    return Promise.resolve(sessionToken);
+let tokens = {};
+const getTokens = function (client) {
+  if (tokens.sessionToken && tokens.loginToken) {
+    return tokens;
   } else {
     return Promise.all([
              client
@@ -157,13 +157,14 @@ const getSessionToken = function (client) {
                const email = values[0],
                      domain = values[1].settings.bloomfire_domain,
                      key = values[1].settings.bloomfire_api_key;
-               return fetch(`https://${domain}/api/v2/login?email=${encodeURIComponent(email)}&api_key=${key}`)
+               return fetch(`https://${domain}/api/v2/login?email=${encodeURIComponent(email)}&api_key=${key}&fields=session_token,login_token`)
                         .then(data => data.json())
                         .then(function (data) {
-                          if (typeof sessionToken === 'undefined') {
-                            sessionToken = data.session_token;
-                          }
-                          return data.session_token;
+                          tokens = {
+                            sessionToken: data.session_token,
+                            loginToken: data.login_token
+                          };
+                          return tokens;
                         });
              });
   }
@@ -192,14 +193,14 @@ const getFromClientTicket = function (client, ...paths) {
 // given an array of Bloomfire resource API URLs, return a promise of response data
 const getResources = function (client, resourcesArr) {
   return Promise.all([
-           getSessionToken(client),
+           getTokens(client),
            client.metadata()
          ])
            .then(function (values) {
-             const token = values[0],
+             const sessionToken = values[0].sessionToken,
                    domain = values[1].settings.bloomfire_domain,
                    resourceReqs = resourcesArr.map(function (resource) {
-                     return fetch(`${getResourceAPIURL(domain, resource.type, resource.id)}?session_token=${token}`, fetchOpts)
+                     return fetch(`${getResourceAPIURL(domain, resource.type, resource.id)}?session_token=${sessionToken}`, fetchOpts)
                               .then(response => response.json());
                    });
              return Promise.all(resourceReqs);
@@ -222,9 +223,9 @@ const showNewTicketMessage = function (client, type, id) {
 
 
 // build and append href values to resources
-const addHrefs = function (domain, resourcesArr) {
+const addHrefs = function (domain, resourcesArr, loginToken) {
   resourcesArr.forEach(function (resourceObj) {
-    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id);
+    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id, loginToken);
   });
 };
 
@@ -246,7 +247,7 @@ export {
   getFormDataFromJSON,
   capitalizeFirstLetter,
   trimResource,
-  getSessionToken,
+  getTokens,
   getFromClientTicket,
   showNewTicketMessage
 };

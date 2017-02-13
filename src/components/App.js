@@ -13,10 +13,10 @@ import {
   encodeLinkedResources,
   decodeLinkedResources,
   trimResource,
-  getSessionToken,
   getFromClientTicket,
   getCustomFieldID,
-  getResourcesTxtFromCustomField
+  getResourcesTxtFromCustomField,
+  getTokens
 } from '../utils';
 
 
@@ -25,7 +25,6 @@ class App extends React.Component {
 
   constructor(props) {
     super(props);
-    this.client = ZAFClient.init();
     this.resizeInterval = null;
     // state
     this.state = {
@@ -38,7 +37,6 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    // console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
   }
 
   componentDidMount() {
@@ -50,13 +48,15 @@ class App extends React.Component {
   // read linked resources from ticket's custom field and update state
   populateLinkedResources() {
     Promise.all([
-      getResourcesTxtFromCustomField(this.client),
-      this.client.metadata()
+      getResourcesTxtFromCustomField(this.props.client),
+      this.props.client.metadata(),
+      getTokens(this.props.client)
     ])
       .then(values => {
         const resourcesArr = decodeLinkedResources(values[0]),
-              domain = values[1].settings.bloomfire_domain;
-        getResources(this.client, resourcesArr)
+              domain = values[1].settings.bloomfire_domain,
+              loginToken = values[2].loginToken;
+        getResources(this.props.client, resourcesArr)
           .then(linkedResources => {
             let i = linkedResources.length;
             while (i--) { // loop backwards since we may slice while iterating
@@ -65,7 +65,7 @@ class App extends React.Component {
               }
             }
             linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
-            addHrefs(domain, linkedResources);
+            addHrefs(domain, linkedResources, loginToken);
             this.setState({ linkedResources });
           });
       });
@@ -91,13 +91,13 @@ class App extends React.Component {
 
   updateZendeskTicketCustomField(value) {
     return Promise.all([
-      getCustomFieldID(this.client),
-      getFromClientTicket(this.client, 'id')
+      getCustomFieldID(this.props.client),
+      getFromClientTicket(this.props.client, 'id')
     ])
       .then(values => {
         const customFieldID = values[0],
               ticketID = values[1].id;
-        return this.client.request({
+        return this.props.client.request({
                  url: `/api/v2/tickets/${ticketID}.json`,
                  type: 'PUT',
                  dataType: 'json',
@@ -117,7 +117,7 @@ class App extends React.Component {
   }
 
   getResourcesArr() {
-    return getResourcesTxtFromCustomField(this.client)
+    return getResourcesTxtFromCustomField(this.props.client)
              .then(resourcesTxt => decodeLinkedResources(resourcesTxt));
   }
 
@@ -140,7 +140,7 @@ class App extends React.Component {
   createLinkedResource(resourceObj) {
     Promise.all([
       this.getResourcesArr(),
-      this.client.metadata()
+      this.props.client.metadata()
     ])
       .then(values => {
         const resourcesArr = values[0],
@@ -195,7 +195,7 @@ class App extends React.Component {
     const currentHeight = this.node.clientHeight;
     if (currentHeight !== this.lastHeight) {
       this.lastHeight = currentHeight;
-      this.client.invoke('resize', {
+      this.props.client.invoke('resize', {
         width: '100%',
         height: `${currentHeight + 1}px` // add 1px to make Firefox happy
       });
@@ -214,17 +214,17 @@ class App extends React.Component {
   render() {
     return (
       <main>
-        <Search client={this.client}
+        <Search client={this.props.client}
                 resize={this.resize}
                 results={this.state.searchResults}
                 setResults={this.setSearchResults}
                 addLinkedResource={this.addLinkedResource}/>
-        <LinkedResources client={this.client}
+        <LinkedResources client={this.props.client}
                          resize={this.resize}
                          links={this.state.linkedResources}
                          hasSearchResults={this.state.searchResults.length > 0}
                          removeLinkedResource={this.removeLinkedResource}/>
-        <AddContent client={this.client}
+        <AddContent client={this.props.client}
                     resize={this.resize}
                     createLinkedResource={this.createLinkedResource}/>
       </main>

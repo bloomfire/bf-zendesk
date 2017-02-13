@@ -2,7 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import {
   fetchOpts,
-  getSessionToken,
+  getTokens,
   getBloomfireUserIDByEmail
 } from '../utils';
 
@@ -46,17 +46,17 @@ class AskToAnswer extends React.Component {
 
   populateSuggestions() {
     Promise.all([
-      getSessionToken(this.props.client),
+      getTokens(this.props.client),
       this.props.client.metadata(),
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
         .then(getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
     ])
       .then(values => {
-        const token = values[0],
+        const sessionToken = values[0].sessionToken,
               domain = values[1].settings.bloomfire_domain,
               currentUserID = values[2];
-        fetch(`https://${domain}/api/v2/users?fields=active,id,first_name,last_name&session_token=${token}`, fetchOpts)
+        fetch(`https://${domain}/api/v2/users?fields=active,id,first_name,last_name&session_token=${sessionToken}`, fetchOpts)
           .then(response => response.json())
           .then(users => {
             this.props.setCurrentUserID(currentUserID); // pass current user ID upstream to avoid an extra API request

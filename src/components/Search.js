@@ -4,7 +4,7 @@ import _ from 'lodash';
 import {
   fetchOpts,
   trimResource,
-  getSessionToken,
+  getTokens,
   getResourceURL,
   addHrefs
 }  from '../utils';
@@ -49,13 +49,13 @@ class Search extends React.Component {
   // TODO: access second-level properties via Search API if possible (to avoid an individual request for every resource returned)
   getSearchResults(query) {
     return Promise.all([
-             getSessionToken(this.props.client),
+             getTokens(this.props.client),
              this.props.client.metadata()
            ])
              .then(values => {
-               const token = values[0],
+               const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${token}`, fetchOpts)
+               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${sessionToken}`, fetchOpts)
                         .then(response => response.json())
                         .then(results => {
                           return results.map(result => { // move properties of `result.instance` up to properties of `result`
@@ -80,12 +80,14 @@ class Search extends React.Component {
   performSearchByQuery(query) {
     Promise.all([
       this.getSearchResults(query),
-      this.props.client.metadata()
+      this.props.client.metadata(),
+      getTokens(this.props.client)
     ])
       .then(values => {
         const results = values[0],
-              domain = values[1].settings.bloomfire_domain;
-        addHrefs(domain, results);
+              domain = values[1].settings.bloomfire_domain,
+              loginToken = values[2].loginToken;
+        addHrefs(domain, results, loginToken);
         this.props.setResults(results);
         this.setState({ processing: false });
       });

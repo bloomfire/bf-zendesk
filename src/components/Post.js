@@ -6,7 +6,7 @@ import {
   getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter,
-  getSessionToken,
+  getTokens,
   showNewTicketMessage
 }  from '../utils';
 
@@ -62,13 +62,13 @@ class Post extends React.Component {
 
   submitForm(userID) {
     return Promise.all([
-             getSessionToken(this.props.client),
+             getTokens(this.props.client),
              this.props.client.metadata()
            ])
              .then(values => {
-               const token = values[0],
+               const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/posts?session_token=${token}`, _.merge({}, fetchOpts, {
+               return fetch(`https://${domain}/api/v2/posts?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
                  method: 'POST',
                  body: getFormDataFromJSON({
                    author: userID,

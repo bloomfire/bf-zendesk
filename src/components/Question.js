@@ -5,7 +5,7 @@ import {
   fetchOpts,
   getFormDataFromJSON,
   capitalizeFirstLetter,
-  getSessionToken,
+  getTokens,
   showNewTicketMessage
 } from '../utils';
 
@@ -66,13 +66,13 @@ class Question extends React.Component {
 
   submitForm(currentUserID) {
     return Promise.all([
-             getSessionToken(this.props.client),
+             getTokens(this.props.client),
              this.props.client.metadata()
            ])
              .then(values => {
-               const token = values[0],
+               const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/questions?session_token=${token}`, _.merge({}, fetchOpts, {
+               return fetch(`https://${domain}/api/v2/questions?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
                  method: 'POST',
                  body: getFormDataFromJSON({
                    author: currentUserID,
@@ -88,13 +88,13 @@ class Question extends React.Component {
   submitAnswerers(questionID) {
     const answererIDs = this.state.answerers.map(answerer => answerer.id);
     return Promise.all([
-             getSessionToken(this.props.client),
+             getTokens(this.props.client),
              this.props.client.metadata()
            ])
              .then(values => {
-               const token = values[0],
+               const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/questions/${questionID}/ask_to_answer?session_token=${token}`, _.merge({}, fetchOpts, {
+               return fetch(`https://${domain}/api/v2/questions/${questionID}/ask_to_answer?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
                  method: 'POST',
                  body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
                }));
