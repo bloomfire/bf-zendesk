@@ -125,14 +125,14 @@ textarea {
 
   a {
     .truncate;
+    .calc(max-width, ~'100% - 16px');
     display: inline-block;
     vertical-align: middle;
-    max-width: 288px;
     white-space: nowrap;
   }
 
   .public ~ a {
-    max-width: 248px;
+    .calc(max-width, ~'100% - 56px');
   }
 
   .public {
