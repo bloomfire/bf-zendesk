@@ -42,8 +42,12 @@ class App extends React.Component {
 
   componentDidMount() {
     this.node = ReactDOM.findDOMNode(this);
-    this.lastHeight = this.node.clientHeight;
+    this.lastHeight = this.getHeight();
     this.populateLinkedResources();
+  }
+
+  getHeight() {
+    return Math.max(this.node.clientHeight, this.node.offsetHeight);
   }
 
   // read linked resources from ticket's custom field and update state
@@ -193,7 +197,7 @@ class App extends React.Component {
   };
 
   applyResize() {
-    const currentHeight = this.node.clientHeight;
+    const currentHeight = this.getHeight();
     if (currentHeight !== this.lastHeight) {
       this.lastHeight = currentHeight;
       this.props.client.invoke('resize', {

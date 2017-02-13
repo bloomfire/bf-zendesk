@@ -157,12 +157,16 @@ section.add-content {
     }
 
     li {
-      // border-bottom: 1px solid #ddd; // TODO: reenable if we display more than one suggestion at a time
+      border-bottom: 1px solid #ddd;
       padding: 3px 8px;
 
       &:hover {
         cursor: pointer;
         background: #efefef;
+      }
+
+      &:last-child {
+        border-bottom: none;
       }
 
       &.is-active {

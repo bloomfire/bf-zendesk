@@ -46,7 +46,6 @@ class Search extends React.Component {
              .then(data => _.trim(data['ticket.description']));
   }
 
-  // TODO: access second-level properties via Search API if possible (to avoid an individual request for every resource returned)
   getSearchResults(query) {
     return Promise.all([
              getTokens(this.props.client),
