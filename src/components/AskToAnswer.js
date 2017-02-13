@@ -96,7 +96,7 @@ class AskToAnswer extends React.Component {
                  placeholder="Ask member to answer (optional)"
                  autofocus={false}
                  minQueryLength={1}
-                 maxSuggestionsLength={1}
+                 maxSuggestionsLength={5}
                  handleAddition={this.handleAddition}
                  handleDelete={this.handleDelete}
                  classNames={classNames}/>
