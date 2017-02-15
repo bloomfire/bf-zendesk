@@ -2,6 +2,7 @@ import React from 'react';
 import classNames from 'classnames';
 import _ from 'lodash';
 import {
+  paragraphify,
   fetchOpts,
   getBloomfireUserIDByEmail,
   getFormDataFromJSON,
@@ -74,7 +75,7 @@ class Post extends React.Component {
                    author: userID,
                    title: this.state.title,
                    description: this.state.description,
-                   post_body: this.state.body,
+                   post_body: paragraphify(this.state.body),
                    published: true,
                    public: false
                  })

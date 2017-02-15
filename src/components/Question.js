@@ -168,16 +168,16 @@ class Question extends React.Component {
     return (
       <form className={classNameForm}
             onSubmit={this.handleSubmit}>
-        <textarea name="question"
-                  value={this.state.question}
-                  placeholder={questionPlaceholder}
-                  className={classNameQuestion}
-                  onChange={this.handleChange}></textarea>
         <input type="text"
-               name="explanation"
-               value={this.state.explanation}
-               placeholder="Explanation (optional)"
-               onChange={this.handleChange}/>
+               name="question"
+               value={this.state.question}
+               placeholder={questionPlaceholder}
+               className={classNameQuestion}
+               onChange={this.handleChange}></input>
+        <textarea name="explanation"
+                  value={this.state.explanation}
+                  placeholder="Explanation (optional)"
+                  onChange={this.handleChange}/>
         <AskToAnswer client={this.props.client}
                      resize={this.props.resize}
                      answerers={this.state.answerers}

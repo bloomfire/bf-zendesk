@@ -11,6 +11,18 @@ const fetchOpts = {
 
 
 
+// convert text containing newlines into paragraphs
+const paragraphify = function (text) {
+  let lines = text
+                .split(/(?:\r\n|\r|\n)+/g) // split text at one or more newlines
+                .map(line => _.trim(line)); // trim each line
+  lines = _.filter(lines, line => line.length > 0); // only keep lines with content
+  lines = lines.map(line => `<p>${line}</p>`); // wrap lines in paragraph tags
+  return lines.join(''); // rejoin
+};
+
+
+
 //
 const getCustomFieldID = function (client) {
   const devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
@@ -232,6 +244,7 @@ const addHrefs = function (domain, resourcesArr, loginToken) {
 
 
 export {
+  paragraphify,
   getCustomFieldID,
   getResourcesTxtFromCustomField,
   addHrefs,
