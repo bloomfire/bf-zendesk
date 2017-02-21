@@ -1,0 +1,60 @@
+aside.access-message {
+  .border-radius(4px);
+  text-align: center;
+  overflow: hidden;
+  margin: 50px 0;
+
+  &.access-message-locked {
+    background-color: rgba(208, 81, 60, 0.1);
+
+    h3 {
+      color: #d0513c;
+    }
+  }
+
+  &.access-message-unsupported {
+    background-color: rgba(251, 176, 65, 0.15);
+
+    h3 {
+      color: #fbb041;
+    }
+  }
+
+  .icon {
+    display: inline-block;
+    margin: 40px 0 13px;
+  }
+
+  .icon-lock {
+    fill: #d0513c;
+    height: 13px;
+  }
+
+  .icon-warning {
+    fill: #fbb041;
+    width: 16px;
+  }
+
+  h3 {
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 1.15;
+    margin-bottom: 3px;
+  }
+
+  p {
+    font-size: 10px;
+    line-height: 1.4;
+    margin-bottom: 40px;
+    color: #737272;
+
+    a {
+      color: #737272;
+
+      &:hover,
+      &:active {
+        color: #404040;
+      }
+    }
+  }
+}

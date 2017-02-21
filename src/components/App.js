@@ -2,6 +2,8 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 
 // components
+import AccessMessageLocked from './AccessMessageLocked';
+import AccessMessageUnsupported from './AccessMessageUnsupported';
 import Search from './Search';
 import LinkedResources from './LinkedResources';
 import AddContent from './AddContent';
@@ -28,6 +30,8 @@ class App extends React.Component {
     this.resizeInterval = null;
     // state
     this.state = {
+      accessIsLocked: true,
+      accessIsUnsupported: true,
       searchResults: [], // results from either initial search or user-initiated search
       linkedResources: [] // list of linked resources
     };
@@ -37,13 +41,19 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
+    this.showAccessMessage = this.showAccessMessage.bind(this);
     // this.updateZendeskTicketCustomField(''); // DEV ONLY: uncomment this line and refresh the Zendesk ticket page to blow away the ticket's linked resources
   }
 
   componentDidMount() {
     this.node = ReactDOM.findDOMNode(this);
-    this.lastHeight = this.getHeight();
+    this.lastHeight = 0;
     this.populateLinkedResources();
+    this.resize();
+  }
+
+  componentDidUpdate() {
+    this.resize();
   }
 
   getHeight() {
@@ -79,6 +89,12 @@ class App extends React.Component {
   setSearchResults(results) {
     const searchResults = this.hideLinkedResourcesInSearchResults(results);
     this.setState({ searchResults });
+  }
+
+  showAccessMessage(key) {
+    if (key === 'accessIsLocked' || key === 'accessIsUnsupported') {
+      this.setState({ [key]: true });
+    }
   }
 
   hideLinkedResourcesInSearchResults(results) {
@@ -219,19 +235,28 @@ class App extends React.Component {
   render() {
     return (
       <main>
-        <Search client={this.props.client}
-                resize={this.resize}
-                results={this.state.searchResults}
-                setResults={this.setSearchResults}
-                addLinkedResource={this.addLinkedResource}/>
-        <LinkedResources client={this.props.client}
-                         resize={this.resize}
-                         links={this.state.linkedResources}
-                         hasSearchResults={this.state.searchResults.length > 0}
-                         removeLinkedResource={this.removeLinkedResource}/>
-        <AddContent client={this.props.client}
+        {this.state.accessIsLocked && <AccessMessageLocked/>}
+        {this.state.accessIsUnsupported && <AccessMessageUnsupported/>}
+        {(this.state.accessIsLocked || this.state.accessIsUnsupported) || (
+          <div>
+            <Search client={this.props.client}
                     resize={this.resize}
-                    createLinkedResource={this.createLinkedResource}/>
+                    results={this.state.searchResults}
+                    setResults={this.setSearchResults}
+                    addLinkedResource={this.addLinkedResource}
+                    showAccessMessage={this.showAccessMessage}/>
+            <LinkedResources client={this.props.client}
+                             resize={this.resize}
+                             links={this.state.linkedResources}
+                             hasSearchResults={this.state.searchResults.length > 0}
+                             removeLinkedResource={this.removeLinkedResource}
+                             showAccessMessage={this.showAccessMessage}/>
+            <AddContent client={this.props.client}
+                        resize={this.resize}
+                        createLinkedResource={this.createLinkedResource}
+                        showAccessMessage={this.showAccessMessage}/>
+          </div>
+        )}
       </main>
     );
   }
