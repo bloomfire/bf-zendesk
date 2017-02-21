@@ -32451,9 +32451,12 @@ var Search = function (_React$Component) {
         var results = values[0],
             domain = values[1].settings.bloomfire_domain,
             loginToken = values[2].loginToken;
-        (0, _utils.addHrefs)(domain, results, loginToken);
-        _this3.props.setResults(results);
-        _this3.setState({ processing: false });
+        if (typeof results !== 'undefined') {
+          // we may have failed to get results (e.g., due to 403/422 status code)
+          (0, _utils.addHrefs)(domain, results, loginToken);
+          _this3.props.setResults(results);
+          _this3.setState({ processing: false });
+        }
       });
     }
   }, {

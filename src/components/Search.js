@@ -88,9 +88,11 @@ class Search extends React.Component {
         const results = values[0],
               domain = values[1].settings.bloomfire_domain,
               loginToken = values[2].loginToken;
-        addHrefs(domain, results, loginToken);
-        this.props.setResults(results);
-        this.setState({ processing: false });
+        if (typeof results !== 'undefined') { // we may have failed to get results (e.g., due to 403/422 status code)
+          addHrefs(domain, results, loginToken);
+          this.props.setResults(results);
+          this.setState({ processing: false });
+        }
       });
   }
 
