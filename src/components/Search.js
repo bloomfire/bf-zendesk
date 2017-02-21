@@ -55,6 +55,7 @@ class Search extends React.Component {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
                return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${sessionToken}`, fetchOpts)
+                        .then(this.props.handleAPILock) // handle 403/422 status codes
                         .then(response => response.json())
                         .then(results => {
                           return results.map(result => { // move properties of `result.instance` up to properties of `result`
@@ -67,7 +68,8 @@ class Search extends React.Component {
                                  .filter(result => result.contribution_type === 'post' || result.contribution_type === 'question') // only keep Posts and Questions
                                  .filter(result => result.published) // remove unpublished results
                                  .map(trimResource);
-                        });
+                        })
+                        .catch(_.noop); // suppress error (no need to continue)
              });
   }
 

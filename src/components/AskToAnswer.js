@@ -50,13 +50,14 @@ class AskToAnswer extends React.Component {
       this.props.client.metadata(),
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
+        .then(getBloomfireUserIDByEmail.bind(this, this.props.client, this.props.handleAPILock)) // look up current user's email via Bloomfire API
     ])
       .then(values => {
         const sessionToken = values[0].sessionToken,
               domain = values[1].settings.bloomfire_domain,
               currentUserID = values[2];
         fetch(`https://${domain}/api/v2/users?fields=active,id,first_name,last_name&session_token=${sessionToken}`, fetchOpts)
+          .then(this.props.handleAPILock) // handle 403/422 status codes
           .then(response => response.json())
           .then(users => {
             this.props.setCurrentUserID(currentUserID); // pass current user ID upstream to avoid an extra API request
@@ -67,7 +68,8 @@ class AskToAnswer extends React.Component {
               name: `${user.first_name} ${user.last_name}`
             }));
             this.setState({ suggestions: users });
-          });
+          })
+          .catch(_.noop); // suppress error (no need to continue)
       });
   }
 

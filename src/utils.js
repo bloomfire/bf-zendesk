@@ -25,7 +25,7 @@ const paragraphify = function (text) {
 
 //
 const getCustomFieldID = function (client) {
-  const devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
+  const devID = 58672028; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
   return Promise.all([
     client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
     getFromClientTicket(client, `customField:custom_field_${devID}`) // field manually created for development
@@ -114,7 +114,7 @@ const decodeLinkedResources = function (resourcesTxt) {
 
 
 // given a Zendesk user's email, match it to their Bloomfire email and get their Bloomfire ID
-const getBloomfireUserIDByEmail = function (client, email) {
+const getBloomfireUserIDByEmail = function (client, email, handleAPILock) {
   return Promise.all([
            getTokens(client),
            client.metadata()
@@ -123,12 +123,14 @@ const getBloomfireUserIDByEmail = function (client, email) {
              const sessionToken = values[0].sessionToken,
                    domain = values[1].settings.bloomfire_domain;
              return fetch(`https://${domain}/api/v2/users?fields=email,id&session_token=${sessionToken}`, fetchOpts)
+                      .then(handleAPILock) // handle 403/422 status codes
                       .then(response => response.json())
                       .then(users => {
                         return _.result(_.find(users, user => {
                           return user.email === email;
                         }), 'id');
-                      });
+                      })
+                        .catch(_.noop); // suppress error (no need to continue)
            });
 };
 

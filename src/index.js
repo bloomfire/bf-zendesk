@@ -14,9 +14,4 @@ import css from './less/index.less';
 
 
 
-const client = ZAFClient.init();
-
-getTokens(client)
-  .then(function(tokens) {
-    ReactDOM.render(<App client={client}/>, document.getElementById('app'));
-  });
+ReactDOM.render(<App client={ZAFClient.init()}/>, document.getElementById('app'));

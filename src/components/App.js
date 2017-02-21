@@ -30,8 +30,9 @@ class App extends React.Component {
     this.resizeInterval = null;
     // state
     this.state = {
-      accessIsLocked: true,
-      accessIsUnsupported: true,
+      accessPending: true,
+      accessIsLocked: false,
+      accessIsUnsupported: false,
       searchResults: [], // results from either initial search or user-initiated search
       linkedResources: [] // list of linked resources
     };
@@ -41,19 +42,23 @@ class App extends React.Component {
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
-    this.showAccessMessage = this.showAccessMessage.bind(this);
+    this.handleAPILock = this.handleAPILock.bind(this);
     // this.updateZendeskTicketCustomField(''); // DEV ONLY: uncomment this line and refresh the Zendesk ticket page to blow away the ticket's linked resources
   }
 
   componentDidMount() {
     this.node = ReactDOM.findDOMNode(this);
     this.lastHeight = 0;
-    this.populateLinkedResources();
-    this.resize();
+    this.checkAuthorized();
   }
 
   componentDidUpdate() {
     this.resize();
+  }
+
+  checkAuthorized() {
+    getTokens(this.props.client) // make API request to populate token before a flood of components need it
+      .then(this.populateLinkedResources.bind(this));
   }
 
   getHeight() {
@@ -91,10 +96,17 @@ class App extends React.Component {
     this.setState({ searchResults });
   }
 
-  showAccessMessage(key) {
-    if (key === 'accessIsLocked' || key === 'accessIsUnsupported') {
-      this.setState({ [key]: true });
+  handleAPILock(response) {
+    switch (response.status) {
+      case 403:
+        this.setState({ accessIsLocked: true });
+        return Promise.reject(403);
+      case 422:
+        this.setState({ accessIsUnsupported: true });
+        return Promise.reject(422);
     }
+    this.setState({ accessPending: false });
+    return response; // forward responses with other status codes
   }
 
   hideLinkedResourcesInSearchResults(results) {
@@ -233,30 +245,36 @@ class App extends React.Component {
   }
 
   render() {
+    let contents = '';
+    if (this.state.accessIsLocked) {
+      contents = <AccessMessageLocked/>;
+    } else if (this.state.accessIsUnsupported) {
+      contents = <AccessMessageUnsupported/>;
+    } else {
+      contents = (
+        <div className={this.state.accessPending && 'hidden'}>
+          <Search client={this.props.client}
+                  resize={this.resize}
+                  results={this.state.searchResults}
+                  setResults={this.setSearchResults}
+                  addLinkedResource={this.addLinkedResource}
+                  handleAPILock={this.handleAPILock}/>
+          <LinkedResources client={this.props.client}
+                           resize={this.resize}
+                           links={this.state.linkedResources}
+                           hasSearchResults={this.state.searchResults.length > 0}
+                           removeLinkedResource={this.removeLinkedResource}
+                           handleAPILock={this.handleAPILock}/>
+          <AddContent client={this.props.client}
+                      resize={this.resize}
+                      createLinkedResource={this.createLinkedResource}
+                      handleAPILock={this.handleAPILock}/>
+        </div>
+      );
+    }
     return (
       <main>
-        {this.state.accessIsLocked && <AccessMessageLocked/>}
-        {this.state.accessIsUnsupported && <AccessMessageUnsupported/>}
-        {(this.state.accessIsLocked || this.state.accessIsUnsupported) || (
-          <div>
-            <Search client={this.props.client}
-                    resize={this.resize}
-                    results={this.state.searchResults}
-                    setResults={this.setSearchResults}
-                    addLinkedResource={this.addLinkedResource}
-                    showAccessMessage={this.showAccessMessage}/>
-            <LinkedResources client={this.props.client}
-                             resize={this.resize}
-                             links={this.state.linkedResources}
-                             hasSearchResults={this.state.searchResults.length > 0}
-                             removeLinkedResource={this.removeLinkedResource}
-                             showAccessMessage={this.showAccessMessage}/>
-            <AddContent client={this.props.client}
-                        resize={this.resize}
-                        createLinkedResource={this.createLinkedResource}
-                        showAccessMessage={this.showAccessMessage}/>
-          </div>
-        )}
+        {contents}
       </main>
     );
   }

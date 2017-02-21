@@ -70,16 +70,18 @@ class Post extends React.Component {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
                return fetch(`https://${domain}/api/v2/posts?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
-                 method: 'POST',
-                 body: getFormDataFromJSON({
-                   author: userID,
-                   title: this.state.title,
-                   description: this.state.description,
-                   post_body: paragraphify(this.state.body),
-                   published: true,
-                   public: false
-                 })
-               }));
+                        method: 'POST',
+                        body: getFormDataFromJSON({
+                          author: userID,
+                          title: this.state.title,
+                          description: this.state.description,
+                          post_body: paragraphify(this.state.body),
+                          published: true,
+                          public: false
+                        })
+                      }))
+                        .then(this.props.handleAPILock) // handle 403/422 status codes
+                        .catch(_.noop); // suppress error (no need to continue)
              });
   }
 
@@ -111,7 +113,7 @@ class Post extends React.Component {
       this.setState({ processing: true });
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
+        .then(getBloomfireUserIDByEmail.bind(this, this.props.client, this.props.handleAPILock)) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(response => response.json()) // extract JSON from response
         .then(data => {

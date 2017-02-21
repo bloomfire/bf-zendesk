@@ -73,15 +73,17 @@ class Question extends React.Component {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
                return fetch(`https://${domain}/api/v2/questions?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
-                 method: 'POST',
-                 body: getFormDataFromJSON({
-                   author: currentUserID,
-                   question: this.state.question,
-                   explanation: this.state.explanation,
-                   published: true,
-                   public: false
-                 })
-               }));
+                        method: 'POST',
+                        body: getFormDataFromJSON({
+                          author: currentUserID,
+                          question: this.state.question,
+                          explanation: this.state.explanation,
+                          published: true,
+                          public: false
+                        })
+                      }))
+                        .then(this.props.handleAPILock) // handle 403/422 status codes
+                        .catch(_.noop); // suppress error (no need to continue)
              });
   }
 
@@ -95,9 +97,11 @@ class Question extends React.Component {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
                return fetch(`https://${domain}/api/v2/questions/${questionID}/ask_to_answer?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
-                 method: 'POST',
-                 body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
-               }));
+                        method: 'POST',
+                        body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
+                      }))
+                        .then(this.props.handleAPILock) // handle 403/422 status codes
+                        .catch(_.noop); // suppress error (no need to continue)
              });
   }
 
@@ -183,7 +187,8 @@ class Question extends React.Component {
                      resize={this.props.resize}
                      answerers={this.state.answerers}
                      setAnswerers={this.setAnswerers}
-                     setCurrentUserID={this.setCurrentUserID}/>
+                     setCurrentUserID={this.setCurrentUserID}
+                     handleAPILock={this.props.handleAPILock}/>
         <p className="link-to-ticket">
           <input type="checkbox"
                  id="link-question"

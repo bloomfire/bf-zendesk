@@ -3785,7 +3785,7 @@ var paragraphify = function paragraphify(text) {
 
 //
 var getCustomFieldID = function getCustomFieldID(client) {
-  var devID = 54394587; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
+  var devID = 58672028; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
   return Promise.all([client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
   getFromClientTicket(client, 'customField:custom_field_' + devID) // field manually created for development
   ]).then(function (values) {
@@ -3863,17 +3863,18 @@ var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
 };
 
 // given a Zendesk user's email, match it to their Bloomfire email and get their Bloomfire ID
-var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email) {
+var getBloomfireUserIDByEmail = function getBloomfireUserIDByEmail(client, email, handleAPILock) {
   return Promise.all([getTokens(client), client.metadata()]).then(function (values) {
     var sessionToken = values[0].sessionToken,
         domain = values[1].settings.bloomfire_domain;
-    return fetch('https://' + domain + '/api/v2/users?fields=email,id&session_token=' + sessionToken, fetchOpts).then(function (response) {
+    return fetch('https://' + domain + '/api/v2/users?fields=email,id&session_token=' + sessionToken, fetchOpts).then(handleAPILock) // handle 403/422 status codes
+    .then(function (response) {
       return response.json();
     }).then(function (users) {
       return _lodash2.default.result(_lodash2.default.find(users, function (user) {
         return user.email === email;
       }), 'id');
-    });
+    }).catch(_lodash2.default.noop); // suppress error (no need to continue)
   });
 };
 
@@ -30231,14 +30232,9 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 
 // components
-var client = ZAFClient.init();
+_reactDom2.default.render(_react2.default.createElement(_App2.default, { client: ZAFClient.init() }), document.getElementById('app'));
 
 // styles
-
-
-(0, _utils.getTokens)(client).then(function (tokens) {
-  _reactDom2.default.render(_react2.default.createElement(_App2.default, { client: client }), document.getElementById('app'));
-});
 
 /***/ }),
 /* 201 */
@@ -30997,11 +30993,13 @@ var AddContent = function (_React$Component) {
             initialTabID: this.initialTabID }),
           _react2.default.createElement(_Post2.default, { isSelected: this.state.selectedTabID === '1',
             client: this.props.client,
-            createLinkedResource: this.props.createLinkedResource }),
+            createLinkedResource: this.props.createLinkedResource,
+            handleAPILock: this.props.handleAPILock }),
           _react2.default.createElement(_Question2.default, { isSelected: this.state.selectedTabID === '2',
             client: this.props.client,
             createLinkedResource: this.props.createLinkedResource,
-            resize: this.props.resize })
+            resize: this.props.resize,
+            handleAPILock: this.props.handleAPILock })
         )
       );
     }
@@ -31059,8 +31057,6 @@ function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { de
 
 function _toConsumableArray(arr) { if (Array.isArray(arr)) { for (var i = 0, arr2 = Array(arr.length); i < arr.length; i++) { arr2[i] = arr[i]; } return arr2; } else { return Array.from(arr); } }
 
-function _defineProperty(obj, key, value) { if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
-
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
 function _possibleConstructorReturn(self, call) { if (!self) { throw new ReferenceError("this hasn't been initialised - super() hasn't been called"); } return call && (typeof call === "object" || typeof call === "function") ? call : self; }
@@ -31081,8 +31077,9 @@ var App = function (_React$Component) {
     _this.resizeInterval = null;
     // state
     _this.state = {
-      accessIsLocked: true,
-      accessIsUnsupported: true,
+      accessPending: true,
+      accessIsLocked: false,
+      accessIsUnsupported: false,
       searchResults: [], // results from either initial search or user-initiated search
       linkedResources: [] // list of linked resources
     };
@@ -31092,7 +31089,7 @@ var App = function (_React$Component) {
     _this.addLinkedResource = _this.addLinkedResource.bind(_this);
     _this.removeLinkedResource = _this.removeLinkedResource.bind(_this);
     _this.setSearchResults = _this.setSearchResults.bind(_this);
-    _this.showAccessMessage = _this.showAccessMessage.bind(_this);
+    _this.handleAPILock = _this.handleAPILock.bind(_this);
     // this.updateZendeskTicketCustomField(''); // DEV ONLY: uncomment this line and refresh the Zendesk ticket page to blow away the ticket's linked resources
     return _this;
   }
@@ -31102,13 +31099,18 @@ var App = function (_React$Component) {
     value: function componentDidMount() {
       this.node = _reactDom2.default.findDOMNode(this);
       this.lastHeight = 0;
-      this.populateLinkedResources();
-      this.resize();
+      this.checkAuthorized();
     }
   }, {
     key: 'componentDidUpdate',
     value: function componentDidUpdate() {
       this.resize();
+    }
+  }, {
+    key: 'checkAuthorized',
+    value: function checkAuthorized() {
+      (0, _utils.getTokens)(this.props.client) // make API request to populate token before a flood of components need it
+      .then(this.populateLinkedResources.bind(this));
     }
   }, {
     key: 'getHeight',
@@ -31148,11 +31150,18 @@ var App = function (_React$Component) {
       this.setState({ searchResults: searchResults });
     }
   }, {
-    key: 'showAccessMessage',
-    value: function showAccessMessage(key) {
-      if (key === 'accessIsLocked' || key === 'accessIsUnsupported') {
-        this.setState(_defineProperty({}, key, true));
+    key: 'handleAPILock',
+    value: function handleAPILock(response) {
+      switch (response.status) {
+        case 403:
+          this.setState({ accessIsLocked: true });
+          return Promise.reject(403);
+        case 422:
+          this.setState({ accessIsUnsupported: true });
+          return Promise.reject(422);
       }
+      this.setState({ accessPending: false });
+      return response; // forward responses with other status codes
     }
   }, {
     key: 'hideLinkedResourcesInSearchResults',
@@ -31321,31 +31330,37 @@ var App = function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
-      return _react2.default.createElement(
-        'main',
-        null,
-        this.state.accessIsLocked && _react2.default.createElement(_AccessMessageLocked2.default, null),
-        this.state.accessIsUnsupported && _react2.default.createElement(_AccessMessageUnsupported2.default, null),
-        this.state.accessIsLocked || this.state.accessIsUnsupported || _react2.default.createElement(
+      var contents = '';
+      if (this.state.accessIsLocked) {
+        contents = _react2.default.createElement(_AccessMessageLocked2.default, null);
+      } else if (this.state.accessIsUnsupported) {
+        contents = _react2.default.createElement(_AccessMessageUnsupported2.default, null);
+      } else {
+        contents = _react2.default.createElement(
           'div',
-          null,
+          { className: this.state.accessPending && 'hidden' },
           _react2.default.createElement(_Search2.default, { client: this.props.client,
             resize: this.resize,
             results: this.state.searchResults,
             setResults: this.setSearchResults,
             addLinkedResource: this.addLinkedResource,
-            showAccessMessage: this.showAccessMessage }),
+            handleAPILock: this.handleAPILock }),
           _react2.default.createElement(_LinkedResources2.default, { client: this.props.client,
             resize: this.resize,
             links: this.state.linkedResources,
             hasSearchResults: this.state.searchResults.length > 0,
             removeLinkedResource: this.removeLinkedResource,
-            showAccessMessage: this.showAccessMessage }),
+            handleAPILock: this.handleAPILock }),
           _react2.default.createElement(_AddContent2.default, { client: this.props.client,
             resize: this.resize,
             createLinkedResource: this.createLinkedResource,
-            showAccessMessage: this.showAccessMessage })
-        )
+            handleAPILock: this.handleAPILock })
+        );
+      }
+      return _react2.default.createElement(
+        'main',
+        null,
+        contents
       );
     }
   }]);
@@ -31450,12 +31465,13 @@ var AskToAnswer = function (_React$Component) {
       .then(function (data) {
         return data['currentUser.email'];
       }) // extract the returned property
-      .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
+      .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client, this.props.handleAPILock)) // look up current user's email via Bloomfire API
       ]).then(function (values) {
         var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain,
             currentUserID = values[2];
-        fetch('https://' + domain + '/api/v2/users?fields=active,id,first_name,last_name&session_token=' + sessionToken, _utils.fetchOpts).then(function (response) {
+        fetch('https://' + domain + '/api/v2/users?fields=active,id,first_name,last_name&session_token=' + sessionToken, _utils.fetchOpts).then(_this3.props.handleAPILock) // handle 403/422 status codes
+        .then(function (response) {
           return response.json();
         }).then(function (users) {
           _this3.props.setCurrentUserID(currentUserID); // pass current user ID upstream to avoid an extra API request
@@ -31472,7 +31488,7 @@ var AskToAnswer = function (_React$Component) {
             };
           });
           _this3.setState({ suggestions: users });
-        });
+        }).catch(_.noop); // suppress error (no need to continue)
       });
     }
   }, {
@@ -31909,7 +31925,8 @@ var Post = function (_React$Component) {
             published: true,
             public: false
           })
-        }));
+        })).then(_this2.props.handleAPILock) // handle 403/422 status codes
+        .catch(_lodash2.default.noop); // suppress error (no need to continue)
       });
     }
   }, {
@@ -31953,7 +31970,7 @@ var Post = function (_React$Component) {
         .then(function (data) {
           return data['currentUser.email'];
         }) // extract the returned property
-        .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client)) // look up current user's email via Bloomfire API
+        .then(_utils.getBloomfireUserIDByEmail.bind(this, this.props.client, this.props.handleAPILock)) // look up current user's email via Bloomfire API
         .then(this.submitForm.bind(this)) // submit form data
         .then(function (response) {
           return response.json();
@@ -32158,12 +32175,15 @@ var Question = function (_React$Component) {
             published: true,
             public: false
           })
-        }));
+        })).then(_this2.props.handleAPILock) // handle 403/422 status codes
+        .catch(_lodash2.default.noop); // suppress error (no need to continue)
       });
     }
   }, {
     key: 'submitAnswerers',
     value: function submitAnswerers(questionID) {
+      var _this3 = this;
+
       var answererIDs = this.state.answerers.map(function (answerer) {
         return answerer.id;
       });
@@ -32173,22 +32193,23 @@ var Question = function (_React$Component) {
         return fetch('https://' + domain + '/api/v2/questions/' + questionID + '/ask_to_answer?session_token=' + sessionToken, _lodash2.default.merge({}, _utils.fetchOpts, {
           method: 'POST',
           body: (0, _utils.getFormDataFromJSON)({ ask_to_answer_ids: answererIDs })
-        }));
+        })).then(_this3.props.handleAPILock) // handle 403/422 status codes
+        .catch(_lodash2.default.noop); // suppress error (no need to continue)
       });
     }
   }, {
     key: 'handleChange',
     value: function handleChange(event) {
-      var _this3 = this;
+      var _this4 = this;
 
       var target = event.target,
           // shortcut
       value = target.type === 'checkbox' ? target.checked : target.value,
           name = target.name;
       this.setState(_defineProperty({}, name, value), function () {
-        if (_this3.state.submitted) {
+        if (_this4.state.submitted) {
           if (name === 'question') {
-            _this3.validateQuestion();
+            _this4.validateQuestion();
           }
         }
       });
@@ -32196,16 +32217,16 @@ var Question = function (_React$Component) {
   }, {
     key: 'hidePublished',
     value: function hidePublished() {
-      var _this4 = this;
+      var _this5 = this;
 
       setTimeout(function () {
-        _this4.setState({ published: false });
+        _this5.setState({ published: false });
       }, 2000);
     }
   }, {
     key: 'handleSubmit',
     value: function handleSubmit(event) {
-      var _this5 = this;
+      var _this6 = this;
 
       event.preventDefault();
       this.setState({ submitted: true });
@@ -32217,31 +32238,31 @@ var Question = function (_React$Component) {
         }) // extract JSON from response
         .then(function (data) {
           // submit answerers, if needed, or just return response data again immediately
-          if (_this5.state.answerers.length > 0) {
-            return _this5.submitAnswerers(data.id).then(function (response) {
+          if (_this6.state.answerers.length > 0) {
+            return _this6.submitAnswerers(data.id).then(function (response) {
               return response.json();
             });
           } else {
             return data;
           }
         }).then(function (data) {
-          if (_this5.state.linkToTicket) {
-            _this5.props.createLinkedResource({
+          if (_this6.state.linkToTicket) {
+            _this6.props.createLinkedResource({
               display: true,
               id: data.id,
               public: false,
-              title: _this5.state.question,
+              title: _this6.state.question,
               type: data.contribution_type
             });
           }
-          _this5.setState({
+          _this6.setState({
             processing: false,
             published: true,
             submitted: false
-          }, _this5.hidePublished.bind(_this5));
-          _this5.resetFormValues();
-          (0, _utils.getTokens)(_this5.props.client).then(function (tokenData) {
-            return (0, _utils.showNewTicketMessage)(_this5.props.client, data.contribution_type, data.id, tokenData.loginToken);
+          }, _this6.hidePublished.bind(_this6));
+          _this6.resetFormValues();
+          (0, _utils.getTokens)(_this6.props.client).then(function (tokenData) {
+            return (0, _utils.showNewTicketMessage)(_this6.props.client, data.contribution_type, data.id, tokenData.loginToken);
           });
         });
       }
@@ -32272,7 +32293,8 @@ var Question = function (_React$Component) {
           resize: this.props.resize,
           answerers: this.state.answerers,
           setAnswerers: this.setAnswerers,
-          setCurrentUserID: this.setCurrentUserID }),
+          setCurrentUserID: this.setCurrentUserID,
+          handleAPILock: this.props.handleAPILock }),
         _react2.default.createElement(
           'p',
           { className: 'link-to-ticket' },
@@ -32388,10 +32410,13 @@ var Search = function (_React$Component) {
   }, {
     key: 'getSearchResults',
     value: function getSearchResults(query) {
+      var _this2 = this;
+
       return Promise.all([(0, _utils.getTokens)(this.props.client), this.props.client.metadata()]).then(function (values) {
         var sessionToken = values[0].sessionToken,
             domain = values[1].settings.bloomfire_domain;
-        return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=' + sessionToken, _utils.fetchOpts).then(function (response) {
+        return fetch('https://' + domain + '/api/v2/search?query=' + encodeURIComponent(query) + '&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=' + sessionToken, _utils.fetchOpts).then(_this2.props.handleAPILock) // handle 403/422 status codes
+        .then(function (response) {
           return response.json();
         }).then(function (results) {
           return results.map(function (result) {
@@ -32408,7 +32433,7 @@ var Search = function (_React$Component) {
             return result.published;
           }) // remove unpublished results
           .map(_utils.trimResource);
-        });
+        }).catch(_lodash2.default.noop); // suppress error (no need to continue)
       });
     }
   }, {
@@ -32420,15 +32445,15 @@ var Search = function (_React$Component) {
   }, {
     key: 'performSearchByQuery',
     value: function performSearchByQuery(query) {
-      var _this2 = this;
+      var _this3 = this;
 
       Promise.all([this.getSearchResults(query), this.props.client.metadata(), (0, _utils.getTokens)(this.props.client)]).then(function (values) {
         var results = values[0],
             domain = values[1].settings.bloomfire_domain,
             loginToken = values[2].loginToken;
         (0, _utils.addHrefs)(domain, results, loginToken);
-        _this2.props.setResults(results);
-        _this2.setState({ processing: false });
+        _this3.props.setResults(results);
+        _this3.setState({ processing: false });
       });
     }
   }, {
@@ -36509,7 +36534,7 @@ exports = module.exports = __webpack_require__(392)();
 
 
 // module
-exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n* {\n  outline: none !important;\n}\n::-ms-clear {\n  width: 0;\n  height: 0;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n  overflow: hidden;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nmain {\n  overflow: hidden;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput[type=text],\n.react-tags {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-family: inherit;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder,\n.react-tags::-webkit-input-placeholder,\ntextarea ::-webkit-input-placeholder,\ninput[type=text] ::-webkit-input-placeholder,\n.react-tags ::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder,\n.react-tags:-moz-placeholder,\ntextarea :-moz-placeholder,\ninput[type=text] :-moz-placeholder,\n.react-tags :-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder,\n.react-tags::-moz-placeholder,\ntextarea ::-moz-placeholder,\ninput[type=text] ::-moz-placeholder,\n.react-tags ::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder,\n.react-tags:-ms-input-placeholder,\ntextarea :-ms-input-placeholder,\ninput[type=text] :-ms-input-placeholder,\n.react-tags :-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.content-box {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n  overflow-y: auto;\n  max-height: 105px;\n}\n.content-box li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.content-box li .icon-link-container {\n  display: inline-block;\n  margin-right: 4px;\n}\n.content-box li .icon-link,\n.content-box li .icon-broken-link {\n  width: 12px;\n  height: 12px;\n  cursor: pointer;\n}\n.content-box a {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  -lh-property: 0;\nmax-width:-webkit-calc(100% - 16px);\nmax-width:-moz-calc(100% - 16px);\nmax-width:calc(100% - 16px);\n;\n  display: inline-block;\n  vertical-align: middle;\n  white-space: nowrap;\n}\n.content-box .public ~ a {\n  -lh-property: 0;\nmax-width:-webkit-calc(100% - 56px);\nmax-width:-moz-calc(100% - 56px);\nmax-width:calc(100% - 56px);\n;\n}\n.content-box .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link,\n.icon-broken-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n  cursor: pointer;\n}\ninput[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\ninput[type=submit]:hover {\n  background-color: #d0513c;\n}\ninput[type=submit]:active {\n  background-color: #b94835;\n}\ninput[type=submit].processing {\n  background-color: #47af3a;\n}\n.invalid {\n  border-color: #e85b43 !important;\n  background-color: rgba(232, 91, 67, 0.1) !important;\n}\n.invalid::-webkit-input-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid::-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-ms-input-placeholder {\n  color: #e85b43 !important;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search .message {\n  font-size: 12px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .content-box {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search li:hover {\n  background-color: #eceaec;\n}\nsection.search li:hover a {\n  font-weight: 600;\n}\nsection.search li:hover .icon-link {\n  visibility: visible;\n}\nsection.search li .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n  visibility: hidden;\n}\nsection.search li .icon-link:hover,\nsection.search li .icon-link:active {\n  opacity: 0.5;\n}\nsection.search a {\n  color: inherit;\n}\nsection.search .public {\n  color: #7d7c7d;\n}\nsection.linked-resources .no-linked-resources {\n  text-align: center;\n  margin: -5px 0;\n}\nsection.linked-resources .message {\n  color: #317887;\n}\nsection.linked-resources .instructions {\n  color: #737272;\n  font-size: 9px;\n  margin-top: -4px;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 9px;\n  height: 9px;\n  fill: #737272;\n  position: relative;\n  top: -1px;\n  margin: 0 2px 0 1px;\n}\nsection.linked-resources .content-box {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources li:hover a {\n  color: #317887;\n}\nsection.linked-resources li:hover .icon-link {\n  fill: #317887;\n}\nsection.linked-resources li .icon-link {\n  fill: #3fb8cd;\n}\nsection.linked-resources li .icon-broken-link {\n  display: none;\n  fill: #317887;\n}\nsection.linked-resources .icon-link-container:hover .icon-link,\nsection.linked-resources .icon-link-container:active .icon-link {\n  display: none;\n}\nsection.linked-resources .icon-link-container:hover .icon-broken-link,\nsection.linked-resources .icon-link-container:active .icon-broken-link {\n  display: inline-block;\n}\nsection.linked-resources a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.linked-resources .public {\n  color: #61C4d6;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form:before,\nsection.add-content form:after {\n  content: ' ';\n  display: table;\n}\nsection.add-content form:after {\n  clear: both;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea,\nsection.add-content .react-tags {\n  margin-bottom: 11px;\n}\nsection.add-content input[type=text].last-field,\nsection.add-content textarea.last-field,\nsection.add-content .react-tags.last-field {\n  margin-bottom: 9px;\n}\nsection.add-content .link-to-ticket {\n  float: left;\n  font-size: 11px;\n  color: #666;\n  margin-top: 3px;\n}\nsection.add-content .link-to-ticket input {\n  margin-right: 8px;\n}\nsection.add-content .react-tags {\n  position: relative;\n  cursor: text;\n  padding-bottom: 0;\n  width: auto;\n}\nsection.add-content .react-tags__selected {\n  display: inline;\n}\nsection.add-content .react-tags__selected-tag {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #d1d1d1;\n  display: inline-block;\n  margin: 0 8px 3px 0;\n  padding: 0 4px;\n  background: #f1f1f1;\n  font-family: inherit;\n  font-size: inherit;\n  line-height: 16px;\n}\nsection.add-content .react-tags__selected-tag::after {\n  content: '\\2715';\n  color: #AAA;\n  margin-left: 4px;\n}\nsection.add-content .react-tags__selected-tag:hover,\nsection.add-content .react-tags__selected-tag:focus {\n  border-color: #B1B1B1;\n}\nsection.add-content .react-tags__selected-tag:hover::after,\nsection.add-content .react-tags__selected-tag:focus::after {\n  color: #404040;\n}\nsection.add-content .react-tags__search {\n  display: inline-block;\n  margin-bottom: 3px;\n  max-width: 100%;\n}\nsection.add-content .react-tags__search input {\n  max-width: 100%;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: inherit;\n  font-family: inherit;\n  line-height: inherit;\n}\nsection.add-content .react-tags__search input::-ms-clear {\n  display: none;\n}\nsection.add-content .react-tags__suggestions {\n  position: absolute;\n  bottom: 100%;\n  left: 0;\n  width: 100%;\n}\nsection.add-content .react-tags__suggestions ul {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  margin: 4px -1px;\n  padding: 0;\n  list-style: none;\n  background: #fff;\n  border: 1px solid #d1d1d1;\n}\nsection.add-content .react-tags__suggestions li {\n  border-bottom: 1px solid #ddd;\n  padding: 3px 8px;\n}\nsection.add-content .react-tags__suggestions li:hover {\n  cursor: pointer;\n  background: #efefef;\n}\nsection.add-content .react-tags__suggestions li:last-child {\n  border-bottom: none;\n}\nsection.add-content .react-tags__suggestions li.is-active {\n  background: #eee;\n}\nsection.add-content .react-tags__suggestions li.is-disabled {\n  opacity: 0.5;\n  cursor: auto;\n}\nsection.add-content .react-tags__suggestions li mark {\n  text-decoration: underline;\n  background: none;\n  font-weight: 600;\n}\naside.access-message {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  text-align: center;\n  overflow: hidden;\n  margin: 50px 0;\n}\naside.access-message.access-message-locked {\n  background-color: rgba(208, 81, 60, 0.1);\n}\naside.access-message.access-message-locked h3 {\n  color: #d0513c;\n}\naside.access-message.access-message-unsupported {\n  background-color: rgba(251, 176, 65, 0.15);\n}\naside.access-message.access-message-unsupported h3 {\n  color: #fbb041;\n}\naside.access-message .icon {\n  display: inline-block;\n  margin: 40px 0 13px;\n}\naside.access-message .icon-lock {\n  fill: #d0513c;\n  height: 13px;\n}\naside.access-message .icon-warning {\n  fill: #fbb041;\n  width: 16px;\n}\naside.access-message h3 {\n  font-size: 13px;\n  font-weight: 600;\n  line-height: 1.15;\n  margin-bottom: 3px;\n}\naside.access-message p {\n  font-size: 10px;\n  line-height: 1.4;\n  margin-bottom: 40px;\n  color: #737272;\n}\naside.access-message p a {\n  color: #737272;\n}\naside.access-message p a:hover,\naside.access-message p a:active {\n  color: #404040;\n}\n", ""]);
+exports.push([module.i, "html,\nbody,\ndiv,\nspan,\napplet,\nobject,\niframe,\nh1,\nh2,\nh3,\nh4,\nh5,\nh6,\np,\nblockquote,\npre,\na,\nabbr,\nacronym,\naddress,\nbig,\ncite,\ncode,\ndel,\ndfn,\nem,\nimg,\nins,\nkbd,\nq,\ns,\nsamp,\nsmall,\nstrike,\nstrong,\nsub,\nsup,\ntt,\nvar,\nb,\nu,\ni,\ncenter,\ndl,\ndt,\ndd,\nol,\nul,\nli,\nfieldset,\nform,\nlabel,\nlegend,\ntable,\ncaption,\ntbody,\ntfoot,\nthead,\ntr,\nth,\ntd,\narticle,\naside,\ncanvas,\ndetails,\nembed,\nfigure,\nfigcaption,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\noutput,\nruby,\nsection,\nsummary,\ntime,\nmark,\naudio,\nvideo {\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: 100%;\n  font: inherit;\n  vertical-align: baseline;\n}\narticle,\naside,\ndetails,\nfigcaption,\nfigure,\nfooter,\nheader,\nhgroup,\nmenu,\nnav,\nsection {\n  display: block;\n}\nbody {\n  line-height: 1;\n}\nol,\nul {\n  list-style: none;\n}\nblockquote,\nq {\n  quotes: none;\n}\nblockquote:before,\nq:before,\nblockquote:after,\nq:after {\n  content: '';\n  content: none;\n}\ntable {\n  border-collapse: collapse;\n  border-spacing: 0;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cfabfabb2f999f967043d67a4de3f0e1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/b554036306f24ed3d9318045cfaa6aa9.woff') format('woff');\n  font-weight: 100;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/d52dbc9b85d54b6616fe189b75fda343.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/7fbbfa9945c50b3d5730e499871f775c.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/63a80de45cb14190ac8c4bae7f9973c4.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/4a387b1d1822d78140cff8938701d508.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/597834d83fbd67e3a05a843369cc2c7a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/19698a7cbb503b5ff4f3a12997df623b.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ae3a4266bebfc4d6950f7fa601fab790.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a4996343ba918b86bdeed60c0508e96a.woff') format('woff');\n  font-weight: 100;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/c754829d482f0ad7413bfa58338dbd8f.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a7261e66c83cba195a6228071a023dda.woff') format('woff');\n  font-weight: 300;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f8c7426ecc752e9a00f855a5d3419af1.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/fc917cf078d23f4f3d869c62d5eb59cb.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/70d9f3a6f4e59e778a3efa6d61af4d5d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/d7282de432899f2e54c0aab7b114b67c.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/f612d76045fcfa7cee3d26a0e74175c8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a0511cd61b33a958c7eb11543906f5d1.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/160ce2ec29b54b2dbdd18c4ab10c3e5a.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/704828d2a4ae7d3196fe05cb5b9cec06.woff') format('woff');\n  font-weight: 300;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/7657327d3ed4ea6019cb71ec8f63925e.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/14d201c209b8ba70e95e57aa95711bae.woff') format('woff');\n  font-weight: 400;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/b6d892d0c68a6c42acc05f2d024b8d0d.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/6a2db8af304fc7df0a3aa5dd62289c33.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/56f886fbb704db7cce8438b6f2f61a4c.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/72f0e3e8919647383ef725fd523ca5ff.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/e1a6e54298674456d7ff7b3071ecc132.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/c9fb2bd3f637fff7ba841b86cf0fad79.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/024285dc0977da014627aa33f0537c60.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/43c3fabca82cb45331310a7ace6627bd.woff') format('woff');\n  font-weight: 400;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/0df3e000b8ae4f7780c778ffa7f0eee2.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/bfb6d8bb016cabd199dc9a29c9974777.woff') format('woff');\n  font-weight: 600;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/ed2b3bddbb16e7c513aa5f66654545f8.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/465044f9f7464e07b3763106135729f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0370-03FF, U+1F00-1FFF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/61b2bc953c7547076a44a8a996049efe.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/407e38e0df899b02b40d7bd3bdf1300c.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0400-052F, U+20B4, U+2116, U+2DE0-2DFF, U+A640-A69F;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/cf2f64901bd11fc78e501805599c0ab5.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a36f85953016bf54197778002a3d17f1.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0100-024F, U+1E00-1EFF, U+20A0-20AB, U+20AD-20CF, U+2C60-2C7F, U+A720-A7FF;\n}\n@font-face {\n  font-family: proxima-nova;\n  src: url('https://d17777qwi045j6.cloudfront.net/fonts/208d5e47ef38820da86658565adbac90.woff2') format('woff2'), url('https://d17777qwi045j6.cloudfront.net/fonts/a9db05180829a231b34cd1eb8f97a089.woff') format('woff');\n  font-weight: 600;\n  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02C6, U+02DA, U+02DC, U+2000-206F, U+2074, U+20AC, U+2212, U+2215, U+E0FF, U+EFFD, U+F000;\n}\n* {\n  outline: none !important;\n}\n::-ms-clear {\n  width: 0;\n  height: 0;\n}\nhtml {\n  text-rendering: optimizeLegibility;\n  -webkit-font-feature-settings: 'kern', 'kern';\n  font-feature-settings: 'kern', 'kern';\n  -webkit-font-kerning: normal;\n  font-kerning: normal;\n  overflow: hidden;\n}\nbody {\n  font-family: proxima-nova, serif;\n  font-size: 12px;\n  line-height: 20px;\n  color: #404040;\n  margin: 0;\n}\nmain {\n  overflow: hidden;\n}\nsection {\n  border-bottom: 1px solid #e4e4e4;\n  position: relative;\n  padding-bottom: 10px;\n}\nsection.section-collapsible {\n  padding-top: 10px;\n}\nsection.collapsed .icon-caret {\n  -webkit-transform: rotateZ(180deg);\n  -moz-transform: rotateZ(180deg);\n  -ms-transform: rotateZ(180deg);\n  -o-transform: rotateZ(180deg);\n  transform: rotateZ(180deg);\n}\nsection.collapsed .section-content {\n  display: none;\n}\nsection .icon-caret {\n  display: block;\n  width: 9px;\n  height: 20px;\n  position: absolute;\n  top: 10px;\n  right: 0;\n  cursor: pointer;\n}\nsection .section-content {\n  margin-top: 5px;\n}\ntextarea,\ninput[type=text],\n.react-tags {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #b8b8b8;\n  font-family: inherit;\n  font-size: 11px;\n  color: #666;\n  display: block;\n  width: 100%;\n  line-height: 18px;\n  padding: 3px 8px;\n}\ntextarea::-webkit-input-placeholder,\ninput[type=text]::-webkit-input-placeholder,\n.react-tags::-webkit-input-placeholder,\ntextarea ::-webkit-input-placeholder,\ninput[type=text] ::-webkit-input-placeholder,\n.react-tags ::-webkit-input-placeholder {\n  font-weight: 300;\n}\ntextarea:-moz-placeholder,\ninput[type=text]:-moz-placeholder,\n.react-tags:-moz-placeholder,\ntextarea :-moz-placeholder,\ninput[type=text] :-moz-placeholder,\n.react-tags :-moz-placeholder {\n  font-weight: 300;\n}\ntextarea::-moz-placeholder,\ninput[type=text]::-moz-placeholder,\n.react-tags::-moz-placeholder,\ntextarea ::-moz-placeholder,\ninput[type=text] ::-moz-placeholder,\n.react-tags ::-moz-placeholder {\n  font-weight: 300;\n}\ntextarea:-ms-input-placeholder,\ninput[type=text]:-ms-input-placeholder,\n.react-tags:-ms-input-placeholder,\ntextarea :-ms-input-placeholder,\ninput[type=text] :-ms-input-placeholder,\n.react-tags :-ms-input-placeholder {\n  font-weight: 300;\n}\ntextarea {\n  height: 85px;\n  resize: none;\n}\n.content-box {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  padding: 11px 0;\n  margin-bottom: 4px;\n  overflow-y: auto;\n  max-height: 105px;\n}\n.content-box li {\n  position: relative;\n  padding: 0 10px 0 6px;\n}\n.content-box li .icon-link-container {\n  display: inline-block;\n  margin-right: 4px;\n}\n.content-box li .icon-link,\n.content-box li .icon-broken-link {\n  width: 12px;\n  height: 12px;\n  cursor: pointer;\n}\n.content-box a {\n  overflow: hidden;\n  text-overflow: ellipsis;\n  -lh-property: 0;\nmax-width:-webkit-calc(100% - 16px);\nmax-width:-moz-calc(100% - 16px);\nmax-width:calc(100% - 16px);\n;\n  display: inline-block;\n  vertical-align: middle;\n  white-space: nowrap;\n}\n.content-box .public ~ a {\n  -lh-property: 0;\nmax-width:-webkit-calc(100% - 56px);\nmax-width:-moz-calc(100% - 56px);\nmax-width:calc(100% - 56px);\n;\n}\n.content-box .public {\n  text-transform: uppercase;\n  font-weight: 600;\n  font-size: 8px;\n  letter-spacing: 0.6;\n  position: absolute;\n  right: 10px;\n  top: 0;\n}\n.icon-link,\n.icon-broken-link {\n  vertical-align: middle;\n}\n.input-group {\n  position: relative;\n}\nh2 {\n  font-weight: 600;\n  cursor: pointer;\n}\ninput[type=submit] {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  -webkit-transition: background-color 0.2s linear;\n  -moz-transition: background-color 0.2s linear;\n  -o-transition: background-color 0.2s linear;\n  transition: background-color 0.2s linear;\n  background-color: #e85b43;\n  color: #fff;\n  font-size: 12px;\n  font-weight: 600;\n  border: none;\n  text-align: center;\n  width: 81px;\n  line-height: 26px;\n  padding: 0;\n  float: right;\n  cursor: pointer;\n}\ninput[type=submit]:hover {\n  background-color: #d0513c;\n}\ninput[type=submit]:active {\n  background-color: #b94835;\n}\ninput[type=submit].processing {\n  background-color: #47af3a;\n}\n.invalid {\n  border-color: #e85b43 !important;\n  background-color: rgba(232, 91, 67, 0.1) !important;\n}\n.invalid::-webkit-input-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid::-moz-placeholder {\n  color: #e85b43 !important;\n}\n.invalid:-ms-input-placeholder {\n  color: #e85b43 !important;\n}\nmain > div.hidden {\n  display: none;\n}\nsection.search form {\n  margin-bottom: 12px;\n}\nsection.search form:before,\nsection.search form:after {\n  content: ' ';\n  display: table;\n}\nsection.search form:after {\n  clear: both;\n}\nsection.search .input-group {\n  width: 232px;\n  float: left;\n}\nsection.search input[type=text] {\n  padding-right: 22px;\n}\nsection.search .icon-close {\n  -webkit-transform: translateY(-50%);\n  -moz-transform: translateY(-50%);\n  -ms-transform: translateY(-50%);\n  -o-transform: translateY(-50%);\n  transform: translateY(-50%);\n  width: 8px;\n  height: 8px;\n  stroke: #404040;\n  position: absolute;\n  right: 8px;\n  top: 50%;\n  cursor: pointer;\n  display: none;\n}\nsection.search .icon-close.active {\n  display: block;\n}\nsection.search .message {\n  font-size: 12px;\n  font-weight: 600;\n}\nsection.search .message.no-results {\n  color: #d76262;\n}\nsection.search .content-box {\n  background-color: rgba(155, 155, 155, 0.1);\n  margin-top: 5px;\n}\nsection.search li:hover {\n  background-color: #eceaec;\n}\nsection.search li:hover a {\n  font-weight: 600;\n}\nsection.search li:hover .icon-link {\n  visibility: visible;\n}\nsection.search li .icon-link {\n  fill: #404040;\n  opacity: 0.3;\n  visibility: hidden;\n}\nsection.search li .icon-link:hover,\nsection.search li .icon-link:active {\n  opacity: 0.5;\n}\nsection.search a {\n  color: inherit;\n}\nsection.search .public {\n  color: #7d7c7d;\n}\nsection.linked-resources .no-linked-resources {\n  text-align: center;\n  margin: -5px 0;\n}\nsection.linked-resources .message {\n  color: #317887;\n}\nsection.linked-resources .instructions {\n  color: #737272;\n  font-size: 9px;\n  margin-top: -4px;\n}\nsection.linked-resources .instructions .icon-link {\n  width: 9px;\n  height: 9px;\n  fill: #737272;\n  position: relative;\n  top: -1px;\n  margin: 0 2px 0 1px;\n}\nsection.linked-resources .content-box {\n  background-color: rgba(63, 184, 205, 0.1);\n}\nsection.linked-resources li:hover {\n  background-color: #d8eff5;\n}\nsection.linked-resources li:hover a {\n  color: #317887;\n}\nsection.linked-resources li:hover .icon-link {\n  fill: #317887;\n}\nsection.linked-resources li .icon-link {\n  fill: #3fb8cd;\n}\nsection.linked-resources li .icon-broken-link {\n  display: none;\n  fill: #317887;\n}\nsection.linked-resources .icon-link-container:hover .icon-link,\nsection.linked-resources .icon-link-container:active .icon-link {\n  display: none;\n}\nsection.linked-resources .icon-link-container:hover .icon-broken-link,\nsection.linked-resources .icon-link-container:active .icon-broken-link {\n  display: inline-block;\n}\nsection.linked-resources a {\n  color: #3fb8cd;\n  font-weight: 600;\n}\nsection.linked-resources .public {\n  color: #61C4d6;\n}\nsection.add-content {\n  border-bottom: none;\n  padding-bottom: 0;\n}\nsection.add-content .tabs {\n  display: table;\n  width: 100%;\n  table-layout: fixed;\n  margin-bottom: 18px;\n}\nsection.add-content .tab {\n  display: table-cell;\n}\nsection.add-content .tab:first-child {\n  border-right: 1px solid #b8b8b8;\n}\nsection.add-content .tab:first-child span {\n  -webkit-border-top-left-radius: 4px;\n  -moz-border-radius-topleft: 4px;\n  border-top-left-radius: 4px;\n  -webkit-border-bottom-left-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomleft: 4px;\n  -moz-background-clip: padding;\n  border-bottom-left-radius: 4px;\n  background-clip: padding-box;\n  border-right: none;\n}\nsection.add-content .tab:last-child span {\n  -webkit-border-top-right-radius: 4px;\n  -moz-border-radius-topright: 4px;\n  border-top-right-radius: 4px;\n  -webkit-border-bottom-right-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius-bottomright: 4px;\n  -moz-background-clip: padding;\n  border-bottom-right-radius: 4px;\n  background-clip: padding-box;\n  border-left: none;\n}\nsection.add-content .tab.selected span {\n  background-color: #f1f1f1;\n  font-weight: 600;\n}\nsection.add-content .tab span {\n  border: 1px solid #b8b8b8;\n  color: #666;\n  display: block;\n  line-height: 24px;\n  text-align: center;\n  cursor: pointer;\n}\nsection.add-content form {\n  display: none;\n}\nsection.add-content form:before,\nsection.add-content form:after {\n  content: ' ';\n  display: table;\n}\nsection.add-content form:after {\n  clear: both;\n}\nsection.add-content form.selected {\n  display: block;\n}\nsection.add-content input[type=text],\nsection.add-content textarea,\nsection.add-content .react-tags {\n  margin-bottom: 11px;\n}\nsection.add-content input[type=text].last-field,\nsection.add-content textarea.last-field,\nsection.add-content .react-tags.last-field {\n  margin-bottom: 9px;\n}\nsection.add-content .link-to-ticket {\n  float: left;\n  font-size: 11px;\n  color: #666;\n  margin-top: 3px;\n}\nsection.add-content .link-to-ticket input {\n  margin-right: 8px;\n}\nsection.add-content .react-tags {\n  position: relative;\n  cursor: text;\n  padding-bottom: 0;\n  width: auto;\n}\nsection.add-content .react-tags__selected {\n  display: inline;\n}\nsection.add-content .react-tags__selected-tag {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  border: 1px solid #d1d1d1;\n  display: inline-block;\n  margin: 0 8px 3px 0;\n  padding: 0 4px;\n  background: #f1f1f1;\n  font-family: inherit;\n  font-size: inherit;\n  line-height: 16px;\n}\nsection.add-content .react-tags__selected-tag::after {\n  content: '\\2715';\n  color: #AAA;\n  margin-left: 4px;\n}\nsection.add-content .react-tags__selected-tag:hover,\nsection.add-content .react-tags__selected-tag:focus {\n  border-color: #B1B1B1;\n}\nsection.add-content .react-tags__selected-tag:hover::after,\nsection.add-content .react-tags__selected-tag:focus::after {\n  color: #404040;\n}\nsection.add-content .react-tags__search {\n  display: inline-block;\n  margin-bottom: 3px;\n  max-width: 100%;\n}\nsection.add-content .react-tags__search input {\n  max-width: 100%;\n  margin: 0;\n  padding: 0;\n  border: 0;\n  font-size: inherit;\n  font-family: inherit;\n  line-height: inherit;\n}\nsection.add-content .react-tags__search input::-ms-clear {\n  display: none;\n}\nsection.add-content .react-tags__suggestions {\n  position: absolute;\n  bottom: 100%;\n  left: 0;\n  width: 100%;\n}\nsection.add-content .react-tags__suggestions ul {\n  -webkit-border-radius: 2px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 2px;\n  -moz-background-clip: padding;\n  border-radius: 2px;\n  background-clip: padding-box;\n  margin: 4px -1px;\n  padding: 0;\n  list-style: none;\n  background: #fff;\n  border: 1px solid #d1d1d1;\n}\nsection.add-content .react-tags__suggestions li {\n  border-bottom: 1px solid #ddd;\n  padding: 3px 8px;\n}\nsection.add-content .react-tags__suggestions li:hover {\n  cursor: pointer;\n  background: #efefef;\n}\nsection.add-content .react-tags__suggestions li:last-child {\n  border-bottom: none;\n}\nsection.add-content .react-tags__suggestions li.is-active {\n  background: #eee;\n}\nsection.add-content .react-tags__suggestions li.is-disabled {\n  opacity: 0.5;\n  cursor: auto;\n}\nsection.add-content .react-tags__suggestions li mark {\n  text-decoration: underline;\n  background: none;\n  font-weight: 600;\n}\naside.access-message {\n  -webkit-border-radius: 4px;\n  -webkit-background-clip: padding-box;\n  -moz-border-radius: 4px;\n  -moz-background-clip: padding;\n  border-radius: 4px;\n  background-clip: padding-box;\n  text-align: center;\n  overflow: hidden;\n  margin: 50px 0;\n}\naside.access-message.access-message-locked {\n  background-color: rgba(208, 81, 60, 0.1);\n}\naside.access-message.access-message-locked h3 {\n  color: #d0513c;\n}\naside.access-message.access-message-unsupported {\n  background-color: rgba(251, 176, 65, 0.15);\n}\naside.access-message.access-message-unsupported h3 {\n  color: #fbb041;\n}\naside.access-message .icon {\n  display: inline-block;\n  margin: 40px 0 13px;\n}\naside.access-message .icon-lock {\n  fill: #d0513c;\n  height: 13px;\n}\naside.access-message .icon-warning {\n  fill: #fbb041;\n  width: 16px;\n}\naside.access-message h3 {\n  font-size: 13px;\n  font-weight: 600;\n  line-height: 1.15;\n  margin-bottom: 3px;\n}\naside.access-message p {\n  font-size: 10px;\n  line-height: 1.4;\n  margin-bottom: 40px;\n  color: #737272;\n}\naside.access-message p a {\n  color: #737272;\n}\naside.access-message p a:hover,\naside.access-message p a:active {\n  color: #404040;\n}\n", ""]);
 
 // exports
 

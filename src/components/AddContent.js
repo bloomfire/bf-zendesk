@@ -57,11 +57,13 @@ class AddContent extends React.Component {
                 initialTabID={this.initialTabID}/>
           <Post isSelected={this.state.selectedTabID === '1'}
                 client={this.props.client}
-                createLinkedResource={this.props.createLinkedResource}/>
+                createLinkedResource={this.props.createLinkedResource}
+                handleAPILock={this.props.handleAPILock}/>
           <Question isSelected={this.state.selectedTabID === '2'}
                     client={this.props.client}
                     createLinkedResource={this.props.createLinkedResource}
-                    resize={this.props.resize}/>
+                    resize={this.props.resize}
+                    handleAPILock={this.props.handleAPILock}/>
         </div>
       </section>
     );
