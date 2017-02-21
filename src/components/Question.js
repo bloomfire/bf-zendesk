@@ -151,7 +151,8 @@ class Question extends React.Component {
             submitted: false
           }, this.hidePublished.bind(this));
           this.resetFormValues();
-          showNewTicketMessage(this.props.client, data.contribution_type, data.id);
+          getTokens(this.props.client)
+            .then(tokenData => showNewTicketMessage(this.props.client, data.contribution_type, data.id, tokenData.loginToken));
         });
     }
   }

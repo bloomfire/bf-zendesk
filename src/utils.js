@@ -66,7 +66,13 @@ const getResourcesTxtFromCustomField = function (client) {
 
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
-const getResourceURL = (domain, type, id, loginToken) => `https://${domain}/${type}s/${id}?token=${loginToken}`;
+const getResourceURL = function (domain, type, id, loginToken) {
+  let url = `https://${domain}/${type}s/${id}`;
+  if (typeof loginToken !== 'undefined') {
+    url += `?token=${loginToken}`;
+  }
+  return url;
+};
 
 
 
@@ -81,7 +87,7 @@ const encodeLinkedResource = resourceObj => `${resourceObj.type}|${resourceObj.i
 
 
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
-const encodeLinkedResources = resourcesArr => resourcesArr.map(encodeLinkedResource).join('\r\n');
+const encodeLinkedResources = resourcesArr => resourcesArr.map(encodeLinkedResource).join(',');
 
 
 
@@ -99,7 +105,7 @@ const decodeLinkedResource = function (resourcesTxt) {
 // given a text string containing Bloomfire linked resources, return an array of linked resource objects
 const decodeLinkedResources = function (resourcesTxt) {
   if (resourcesTxt.length > 0) {
-    return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
+    return resourcesTxt.split(',').map(decodeLinkedResource);
   } else {
     return [];
   }
@@ -222,12 +228,13 @@ const getResources = function (client, resourcesArr) {
 
 
 //
-const showNewTicketMessage = function (client, type, id) {
+const showNewTicketMessage = function (client, type, id, loginToken) {
   client.metadata()
     .then(metadata => {
       const resource = capitalizeFirstLetter(type),
-            postURL = `https://${metadata.settings.bloomfire_domain}/${type}s/${id}`,
-            message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postURL}" target="_blank">${postURL}</a>`;
+            postURL = getResourceURL(metadata.settings.bloomfire_domain, type, id),
+            postHref = getResourceURL(metadata.settings.bloomfire_domain, type, id, loginToken),
+            message = `You’ve created a new Bloomfire ${resource}. View it here: <a href="${postHref}" target="_blank">${postURL}</a>`;
       client.invoke('notify', message, 'notice');
     });
 };

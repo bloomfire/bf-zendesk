@@ -10,7 +10,7 @@ import css from './less/index.less';
 
 
 
-// console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
+console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
 
 
 

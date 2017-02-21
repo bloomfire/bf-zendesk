@@ -1,7 +1,7 @@
 {
   "ticket_fields": {
     "bloomfire_linked_resources": {
-      "type": "textarea",
+      "type": "text",
       "title": "Bloomfire Linked Resources",
       "description": "Stores data about linked resources from your organization's Bloomfire account.",
       "active": true,

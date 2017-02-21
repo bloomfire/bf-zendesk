@@ -3822,7 +3822,11 @@ var getResourcesTxtFromCustomField = function getResourcesTxtFromCustomField(cli
 
 // given a Bloomfire linked resource domain, type and ID, return the URL for the resource
 var getResourceURL = function getResourceURL(domain, type, id, loginToken) {
-  return 'https://' + domain + '/' + type + 's/' + id + '?token=' + loginToken;
+  var url = 'https://' + domain + '/' + type + 's/' + id;
+  if (typeof loginToken !== 'undefined') {
+    url += '?token=' + loginToken;
+  }
+  return url;
 };
 
 // given a Bloomfire linked resource domain, type and ID, return the API URL for the resource
@@ -3837,7 +3841,7 @@ var encodeLinkedResource = function encodeLinkedResource(resourceObj) {
 
 // given an array of Bloomfire linked resource objects, return a text string of encoded linked resource objects
 var encodeLinkedResources = function encodeLinkedResources(resourcesArr) {
-  return resourcesArr.map(encodeLinkedResource).join('\r\n');
+  return resourcesArr.map(encodeLinkedResource).join(',');
 };
 
 // given a text string of a Bloomfire linked resource, return a linked resource object
@@ -3852,7 +3856,7 @@ var decodeLinkedResource = function decodeLinkedResource(resourcesTxt) {
 // given a text string containing Bloomfire linked resources, return an array of linked resource objects
 var decodeLinkedResources = function decodeLinkedResources(resourcesTxt) {
   if (resourcesTxt.length > 0) {
-    return resourcesTxt.split(/\r?\n/g).map(decodeLinkedResource);
+    return resourcesTxt.split(',').map(decodeLinkedResource);
   } else {
     return [];
   }
@@ -3962,11 +3966,12 @@ var getResources = function getResources(client, resourcesArr) {
 };
 
 //
-var showNewTicketMessage = function showNewTicketMessage(client, type, id) {
+var showNewTicketMessage = function showNewTicketMessage(client, type, id, loginToken) {
   client.metadata().then(function (metadata) {
     var resource = capitalizeFirstLetter(type),
-        postURL = 'https://' + metadata.settings.bloomfire_domain + '/' + type + 's/' + id,
-        message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postURL + '" target="_blank">' + postURL + '</a>';
+        postURL = getResourceURL(metadata.settings.bloomfire_domain, type, id),
+        postHref = getResourceURL(metadata.settings.bloomfire_domain, type, id, loginToken),
+        message = 'You\u2019ve created a new Bloomfire ' + resource + '. View it here: <a href="' + postHref + '" target="_blank">' + postURL + '</a>';
     client.invoke('notify', message, 'notice');
   });
 };
@@ -30222,14 +30227,12 @@ var _index2 = _interopRequireDefault(_index);
 
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
-// console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
-
-
 // components
-var client = ZAFClient.init();
+console.log(1); // DEV ONLY: ensure that latest app code is still loading // TODO: comment this line for production
+
 
 // styles
-
+var client = ZAFClient.init();
 
 (0, _utils.getTokens)(client).then(function (tokens) {
   _reactDom2.default.render(_react2.default.createElement(_App2.default, { client: client }), document.getElementById('app'));
@@ -31934,7 +31937,9 @@ var Post = function (_React$Component) {
             submitted: false
           }, _this5.hidePublished.bind(_this5));
           _this5.resetFormValues();
-          (0, _utils.showNewTicketMessage)(_this5.props.client, data.contribution_type, data.id);
+          (0, _utils.getTokens)(_this5.props.client).then(function (tokenData) {
+            return (0, _utils.showNewTicketMessage)(_this5.props.client, data.contribution_type, data.id, tokenData.loginToken);
+          });
         });
       }
     }
@@ -32198,7 +32203,9 @@ var Question = function (_React$Component) {
             submitted: false
           }, _this5.hidePublished.bind(_this5));
           _this5.resetFormValues();
-          (0, _utils.showNewTicketMessage)(_this5.props.client, data.contribution_type, data.id);
+          (0, _utils.getTokens)(_this5.props.client).then(function (tokenData) {
+            return (0, _utils.showNewTicketMessage)(_this5.props.client, data.contribution_type, data.id, tokenData.loginToken);
+          });
         });
       }
     }
