@@ -1,9 +1,11 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
+import _ from 'lodash';
 
 // components
-import AccessMessageLocked from './AccessMessageLocked';
-import AccessMessageUnsupported from './AccessMessageUnsupported';
+import AppMessageNoAPI from './AppMessageNoAPI';
+import AppMessageAccessLocked from './AppMessageAccessLocked';
+import AppMessageAccessUnsupported from './AppMessageAccessUnsupported';
 import Search from './Search';
 import LinkedResources from './LinkedResources';
 import AddContent from './AddContent';
@@ -30,6 +32,8 @@ class App extends React.Component {
     this.resizeInterval = null;
     // state
     this.state = {
+      checkingAPI: true,
+      noAPI: false,
       accessPending: true,
       accessIsLocked: false,
       accessIsUnsupported: false,
@@ -49,16 +53,24 @@ class App extends React.Component {
   componentDidMount() {
     this.node = ReactDOM.findDOMNode(this);
     this.lastHeight = 0;
-    this.checkAuthorized();
+    this.checkAPI();
   }
 
   componentDidUpdate() {
     this.resize();
   }
 
-  checkAuthorized() {
+  checkAPI() {
     getTokens(this.props.client) // make API request to populate token before a flood of components need it
-      .then(this.populateLinkedResources.bind(this));
+      .then(tokens => {
+        if (!(tokens.sessionToken && tokens.loginToken)) {
+          throw new Error('No tokens available.');
+        }
+        this.setState({ checkingAPI: false });
+        return tokens;
+      })
+      .then(this.populateLinkedResources.bind(this))
+      .catch(this.handleAPIError.bind(this));
   }
 
   getHeight() {
@@ -94,6 +106,13 @@ class App extends React.Component {
   setSearchResults(results) {
     const searchResults = this.hideLinkedResourcesInSearchResults(results);
     this.setState({ searchResults });
+  }
+
+  handleAPIError(error) {
+    this.setState({
+      checkingAPI: false,
+      noAPI: true
+    });
   }
 
   handleAPILock(response) {
@@ -246,31 +265,35 @@ class App extends React.Component {
 
   render() {
     let contents = '';
-    if (this.state.accessIsLocked) {
-      contents = <AccessMessageLocked/>;
-    } else if (this.state.accessIsUnsupported) {
-      contents = <AccessMessageUnsupported/>;
-    } else {
-      contents = (
-        <div className={this.state.accessPending && 'hidden'}>
-          <Search client={this.props.client}
-                  resize={this.resize}
-                  results={this.state.searchResults}
-                  setResults={this.setSearchResults}
-                  addLinkedResource={this.addLinkedResource}
-                  handleAPILock={this.handleAPILock}/>
-          <LinkedResources client={this.props.client}
-                           resize={this.resize}
-                           links={this.state.linkedResources}
-                           hasSearchResults={this.state.searchResults.length > 0}
-                           removeLinkedResource={this.removeLinkedResource}
-                           handleAPILock={this.handleAPILock}/>
-          <AddContent client={this.props.client}
-                      resize={this.resize}
-                      createLinkedResource={this.createLinkedResource}
-                      handleAPILock={this.handleAPILock}/>
-        </div>
-      );
+    if (!this.state.checkingAPI) {
+      if (this.state.noAPI) {
+        contents = <AppMessageNoAPI/>;
+      } else if (this.state.accessIsLocked) {
+        contents = <AppMessageAccessLocked/>;
+      } else if (this.state.accessIsUnsupported) {
+        contents = <AppMessageAccessUnsupported/>;
+      } else {
+        contents = (
+          <div className={this.state.accessPending && 'hidden'}>
+            <Search client={this.props.client}
+                    resize={this.resize}
+                    results={this.state.searchResults}
+                    setResults={this.setSearchResults}
+                    addLinkedResource={this.addLinkedResource}
+                    handleAPILock={this.handleAPILock}/>
+            <LinkedResources client={this.props.client}
+                             resize={this.resize}
+                             links={this.state.linkedResources}
+                             hasSearchResults={this.state.searchResults.length > 0}
+                             removeLinkedResource={this.removeLinkedResource}
+                             handleAPILock={this.handleAPILock}/>
+            <AddContent client={this.props.client}
+                        resize={this.resize}
+                        createLinkedResource={this.createLinkedResource}
+                        handleAPILock={this.handleAPILock}/>
+          </div>
+        );
+      }
     }
     return (
       <main>

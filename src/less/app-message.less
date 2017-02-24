@@ -1,10 +1,10 @@
-aside.access-message {
+aside.app-message {
   .border-radius(4px);
   text-align: center;
   overflow: hidden;
   margin: 50px 0;
 
-  &.access-message-locked {
+  &.app-message-access-locked {
     background-color: rgba(208, 81, 60, 0.1);
 
     h3 {
@@ -12,7 +12,8 @@ aside.access-message {
     }
   }
 
-  &.access-message-unsupported {
+  &.app-message-access-unsupported,
+  &.app-message-no-api {
     background-color: rgba(251, 176, 65, 0.15);
 
     h3 {
