@@ -46,15 +46,16 @@ class Search extends React.Component {
              .then(data => _.trim(data['ticket.description']));
   }
 
-  getSearchResults(query) {
+  getSearchResults(query, track) {
     return Promise.all([
              getTokens(this.props.client),
              this.props.client.metadata()
            ])
              .then(values => {
                const sessionToken = values[0].sessionToken,
-                     domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${sessionToken}`, fetchOpts)
+                     domain = values[1].settings.bloomfire_domain,
+                     trackParam = track ? '' : '&tk=false';
+               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${sessionToken}${trackParam}`, fetchOpts)
                         .then(this.props.handleAPILock) // handle 403/422 status codes
                         .then(response => response.json())
                         .then(results => {
@@ -78,9 +79,9 @@ class Search extends React.Component {
     this.performSearchByDescription();
   }
 
-  performSearchByQuery(query) {
+  performSearchByQuery(query, track = true) {
     Promise.all([
-      this.getSearchResults(query),
+      this.getSearchResults(query, track),
       this.props.client.metadata(),
       getTokens(this.props.client)
     ])
@@ -99,7 +100,9 @@ class Search extends React.Component {
   performSearchByDescription() {
     this
       .getTicketDescription()
-      .then(this.performSearchByQuery.bind(this));
+      .then(query => {
+        this.performSearchByQuery(query, false);
+      });
   }
 
   handleChange(event) {
