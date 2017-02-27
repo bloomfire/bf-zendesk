@@ -165,7 +165,7 @@ const trimResource = (resourceObj) => ({
 let tokens = {};
 const getTokens = function (client) {
   if (tokens.sessionToken && tokens.loginToken) {
-    return tokens;
+    return Promise.resolve(tokens);
   } else {
     return Promise.all([
              client

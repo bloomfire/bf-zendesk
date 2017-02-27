@@ -3907,7 +3907,7 @@ var trimResource = function trimResource(resourceObj) {
 var tokens = {};
 var getTokens = function getTokens(client) {
   if (tokens.sessionToken && tokens.loginToken) {
-    return tokens;
+    return Promise.resolve(tokens);
   } else {
     return Promise.all([client.get('currentUser.email') // get current user's email via Zendesk client SDK
     .then(function (data) {
@@ -31293,12 +31293,13 @@ var App = function (_React$Component) {
     value: function createLinkedResource(resourceObj) {
       var _this6 = this;
 
-      Promise.all([this.getResourcesArr(), this.props.client.metadata()]).then(function (values) {
+      Promise.all([this.getResourcesArr(), this.props.client.metadata(), (0, _utils.getTokens)(this.props.client)]).then(function (values) {
         var resourcesArr = values[0],
             domain = values[1].settings.bloomfire_domain,
+            loginToken = values[2].loginToken,
             linkedResources = [].concat(_toConsumableArray(_this6.state.linkedResources), [{
           display: true,
-          href: (0, _utils.getResourceURL)(domain, resourceObj.type, resourceObj.id),
+          href: (0, _utils.getResourceURL)(domain, resourceObj.type, resourceObj.id, loginToken),
           id: resourceObj.id,
           public: false,
           title: resourceObj.title,

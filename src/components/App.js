@@ -192,14 +192,16 @@ class App extends React.Component {
   createLinkedResource(resourceObj) {
     Promise.all([
       this.getResourcesArr(),
-      this.props.client.metadata()
+      this.props.client.metadata(),
+      getTokens(this.props.client)
     ])
       .then(values => {
         const resourcesArr = values[0],
               domain = values[1].settings.bloomfire_domain,
+              loginToken = values[2].loginToken,
               linkedResources = [...this.state.linkedResources, {
                 display: true,
-                href: getResourceURL(domain, resourceObj.type, resourceObj.id),
+                href: getResourceURL(domain, resourceObj.type, resourceObj.id, loginToken),
                 id: resourceObj.id,
                 public: false,
                 title: resourceObj.title,

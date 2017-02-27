@@ -5,7 +5,6 @@ import {
   fetchOpts,
   trimResource,
   getTokens,
-  getResourceURL,
   addHrefs
 }  from '../utils';
 
