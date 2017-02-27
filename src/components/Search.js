@@ -129,18 +129,18 @@ class Search extends React.Component {
   }
 
   render() {
-    const resultsExist = this.props.results.length > 0,
+    const resultsToShow = _.filter(this.props.results, result => result.display).length > 0,
           classNameMessage = classNames(
             'message',
-            { 'no-results': !resultsExist }
+            { 'no-results': !resultsToShow }
           ),
           classNameSubmit = classNames({ processing: this.state.searched && this.state.processing }),
           buttonLabel = this.state.searched && this.state.processing ? 'Searching' : 'Search';
     let message;
     if (this.state.searched) {
-      message = resultsExist ? 'The following results matched your search:' : 'No results found.';
+      message = resultsToShow ? 'The following results matched your search:' : 'No results found.';
     } else {
-      message = resultsExist ? 'You might find these resources helpful:' : 'No recommended resources found.';
+      message = resultsToShow ? 'You might find these resources helpful:' : 'No recommended resources found.';
     }
     return (
       <section className="search">
@@ -159,8 +159,8 @@ class Search extends React.Component {
         </form>
         <div className="results">
           {!this.state.processing && <p className={classNameMessage}>{message}</p>}
-          {(!this.state.processing && !this.state.searched && !resultsExist) && <p className="sub-message">Try searching your community.</p>}
-          {this.props.results.length > 0 &&
+          {(!this.state.processing && !this.state.searched && !resultsToShow) && <p className="sub-message">Try searching your community.</p>}
+          {resultsToShow &&
             <div className="content-box">
               <LinkList links={this.props.results}
                         includeBrokenLink={false}

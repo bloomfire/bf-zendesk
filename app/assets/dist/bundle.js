@@ -32730,15 +32730,17 @@ var Search = function (_React$Component) {
   }, {
     key: 'render',
     value: function render() {
-      var resultsExist = this.props.results.length > 0,
-          classNameMessage = (0, _classnames2.default)('message', { 'no-results': !resultsExist }),
+      var resultsToShow = _lodash2.default.filter(this.props.results, function (result) {
+        return result.display;
+      }).length > 0,
+          classNameMessage = (0, _classnames2.default)('message', { 'no-results': !resultsToShow }),
           classNameSubmit = (0, _classnames2.default)({ processing: this.state.searched && this.state.processing }),
           buttonLabel = this.state.searched && this.state.processing ? 'Searching' : 'Search';
       var message = void 0;
       if (this.state.searched) {
-        message = resultsExist ? 'The following results matched your search:' : 'No results found.';
+        message = resultsToShow ? 'The following results matched your search:' : 'No results found.';
       } else {
-        message = resultsExist ? 'You might find these resources helpful:' : 'No recommended resources found.';
+        message = resultsToShow ? 'You might find these resources helpful:' : 'No recommended resources found.';
       }
       return _react2.default.createElement(
         'section',
@@ -32768,12 +32770,12 @@ var Search = function (_React$Component) {
             { className: classNameMessage },
             message
           ),
-          !this.state.processing && !this.state.searched && !resultsExist && _react2.default.createElement(
+          !this.state.processing && !this.state.searched && !resultsToShow && _react2.default.createElement(
             'p',
             { className: 'sub-message' },
             'Try searching your community.'
           ),
-          this.props.results.length > 0 && _react2.default.createElement(
+          resultsToShow && _react2.default.createElement(
             'div',
             { className: 'content-box' },
             _react2.default.createElement(_LinkList2.default, { links: this.props.results,
