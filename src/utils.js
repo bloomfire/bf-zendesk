@@ -151,13 +151,19 @@ const capitalizeFirstLetter = (str) => `${str.charAt(0).toUpperCase()}${str.slic
 
 
 //
-const trimResource = (resourceObj) => ({
-  id: resourceObj.id,
-  type: resourceObj.contribution_type,
-  public: resourceObj.public,
-  title: resourceObj.title || resourceObj.question,
-  display: true // set to display initially
-});
+const normalizeResource = (resourceObj) => {
+  const normalResourceObj = {
+    id: resourceObj.id,
+    type: resourceObj.contribution_type,
+    public: resourceObj.public,
+    title: resourceObj.title || resourceObj.question,
+    display: true // set to display initially
+  };
+  if (resourceObj.url) {
+    normalResourceObj.url = resourceObj.url;
+  }
+  return normalResourceObj;
+};
 
 
 
@@ -220,7 +226,7 @@ const getResources = function (client, resourcesArr) {
              const sessionToken = values[0].sessionToken,
                    domain = values[1].settings.bloomfire_domain,
                    resourceReqs = resourcesArr.map(function (resource) {
-                     return fetch(`${getResourceAPIURL(domain, resource.type, resource.id)}?session_token=${sessionToken}`, fetchOpts)
+                     return fetch(`${getResourceAPIURL(domain, resource.type, resource.id)}?fields=id,public,published,contribution_type,title,description,question,explanation,url&session_token=${sessionToken}`, fetchOpts)
                               .then(response => response.json());
                    });
              return Promise.all(resourceReqs);
@@ -246,7 +252,7 @@ const showNewTicketMessage = function (client, type, id, loginToken) {
 // build and append href values to resources
 const addHrefs = function (domain, resourcesArr, loginToken) {
   resourcesArr.forEach(function (resourceObj) {
-    resourceObj.href = getResourceURL(domain, resourceObj.type, resourceObj.id, loginToken);
+    resourceObj.href = resourceObj.url ? `${resourceObj.url}?token=${loginToken}` : getResourceURL(domain, resourceObj.type, resourceObj.id, loginToken);
   });
 };
 
@@ -268,7 +274,7 @@ export {
   getBloomfireUserIDByEmail,
   getFormDataFromJSON,
   capitalizeFirstLetter,
-  trimResource,
+  normalizeResource,
   getTokens,
   getFromClientTicket,
   showNewTicketMessage

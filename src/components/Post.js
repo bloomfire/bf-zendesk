@@ -69,7 +69,7 @@ class Post extends React.Component {
              .then(values => {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/posts?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
+               return fetch(`https://${domain}/api/v2/posts?fields=id,contribution_type&session_token=${sessionToken}`, _.merge({}, fetchOpts, {
                         method: 'POST',
                         body: getFormDataFromJSON({
                           author: userID,

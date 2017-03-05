@@ -72,7 +72,7 @@ class Question extends React.Component {
              .then(values => {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/questions?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
+               return fetch(`https://${domain}/api/v2/questions?fields=id,contribution_type&session_token=${sessionToken}`, _.merge({}, fetchOpts, {
                         method: 'POST',
                         body: getFormDataFromJSON({
                           author: currentUserID,
@@ -96,7 +96,7 @@ class Question extends React.Component {
              .then(values => {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain;
-               return fetch(`https://${domain}/api/v2/questions/${questionID}/ask_to_answer?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
+               return fetch(`https://${domain}/api/v2/questions/${questionID}/ask_to_answer?fields=id,contribution_type?session_token=${sessionToken}`, _.merge({}, fetchOpts, {
                         method: 'POST',
                         body: getFormDataFromJSON({ ask_to_answer_ids: answererIDs })
                       }))

@@ -3,7 +3,7 @@ import classNames from 'classnames';
 import _ from 'lodash';
 import {
   fetchOpts,
-  trimResource,
+  normalizeResource,
   getTokens,
   addHrefs
 }  from '../utils';
@@ -28,6 +28,8 @@ class Search extends React.Component {
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
     this.clearSearch = this.clearSearch.bind(this);
+    // properties
+    this.resultsLimit = 30;
   }
 
   componentDidMount() {
@@ -54,11 +56,11 @@ class Search extends React.Component {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain,
                      trackParam = track ? '' : '&tk=false';
-               return fetch(`https://${domain}/api/v2/search?query=${encodeURIComponent(query)}&fields=instance(id,public,published,contribution_type,title,description,question,explanation)&session_token=${sessionToken}${trackParam}`, fetchOpts)
+               return fetch(`https://${domain}/api/v2/search/facets/recent?query=${encodeURIComponent(query)}&fields=results(instance(id,public,published,contribution_type,title,description,question,explanation,url))&limit=${this.resultsLimit}&session_token=${sessionToken}${trackParam}`, fetchOpts)
                         .then(this.props.handleAPILock) // handle 403/422 status codes
                         .then(response => response.json())
-                        .then(results => {
-                          return results.map(result => { // move properties of `result.instance` up to properties of `result`
+                        .then(data => {
+                          return data.results.map(result => { // move properties of `data.result.instance` up to properties of `data.result`
                                    let obj = {};
                                    for (const key in result.instance) {
                                      obj[key] = result.instance[key];
@@ -67,7 +69,7 @@ class Search extends React.Component {
                                  })
                                  .filter(result => result.contribution_type === 'post' || result.contribution_type === 'question') // only keep Posts and Questions
                                  .filter(result => result.published) // remove unpublished results
-                                 .map(trimResource);
+                                 .map(normalizeResource);
                         })
                         .catch(_.noop); // suppress error (no need to continue)
              });

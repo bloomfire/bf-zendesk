@@ -16,7 +16,7 @@ import {
   getResourceAPIURL,
   encodeLinkedResources,
   decodeLinkedResources,
-  trimResource,
+  normalizeResource,
   getFromClientTicket,
   getCustomFieldID,
   getResourcesTxtFromCustomField,
@@ -96,7 +96,7 @@ class App extends React.Component {
                 this.removeLinkedResourceFromTicket(linkedResources.splice(i, 1)[0]); // remove from ticket data and array
               }
             }
-            linkedResources = linkedResources.map(trimResource); // remove unnecessary properties
+            linkedResources = linkedResources.map(normalizeResource); // remove unnecessary properties
             addHrefs(domain, linkedResources, loginToken);
             this.setState({ linkedResources });
           });
