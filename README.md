@@ -17,10 +17,15 @@ To begin development:
 
 When the page reloads, you should see the app in the right column. The page is still hosted by Zendesk, but the app's iframe is served locally. Changes to the source code will automatically generate new output files (via Webpack), but you will need to refresh the Chrome tab manually to see those updates.
 
+## Build & Release
+
+1. Stop watch mode (that was started via `npm run dev`) if running.
+1. Create a minified production build by running `npm run build`.
+1. Package the app by running [`zat package`](https://developer.zendesk.com/apps/docs/apps-v2/getting_started#package) in the `/app` directory. This will create a new ZIP file in `/app/tmp`. Currently, these ZIP builds are checked in to git to keep a rudimentary revision history, but it may be wise to `.gitignore` them at some point if that gets unwieldy.
+
 ## Notes
 
 * The `/app` directory is the root directory for the app as far as Zendesk is concerned. For example, the [ZAF CLI](https://developer.zendesk.com/apps/docs/apps-v2/getting_started#zendesk-app-tools) commands won't work in the root directory of this repo; they need to be run from `/app`.
-* Packaging the app with [`zat package`](https://developer.zendesk.com/apps/docs/apps-v2/getting_started#package) will create a new ZIP file in `/app/tmp`. Currently, these are checked in to git to keep a rudimentary revision history, but it may be wise to `.gitignore` them if that doesn't prove to come in handy.
 
 ## Troubleshooting
 

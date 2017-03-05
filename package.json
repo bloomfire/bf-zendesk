@@ -5,7 +5,8 @@
   "main": "./src/index.js",
   "private": true,
   "scripts": {
-    "dev": "webpack --progress --colors --watch",
+    "dev": "webpack --progress --colors --watch --env.development",
+    "build": "webpack --progress --colors --env.production",
     "server": "cd app/ && zat server -c settings.json",
     "test": "echo \"Error: no test specified\" && exit 1"
   },

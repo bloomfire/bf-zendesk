@@ -11,48 +11,55 @@ const PATHS = {
 
 
 
-module.exports = {
-  entry: ['whatwg-fetch', 'core-js/shim', './src/index.js'],
-  output: {
-    path: PATHS.dist,
-    filename: 'bundle.js',
-    publicPath: '/src/assets/'
-  },
-  module: {
-    rules: [
-      {
-        test: /\.jsx?$/,
-        loader: 'babel-loader',
-        include: PATHS.src,
-        options: {
-          presets: [
-            'es2015',
-            'react'
-          ]
+module.exports = function (env) {
+  return {
+    entry: ['whatwg-fetch', 'core-js/shim', './src/index.js'],
+    output: {
+      path: PATHS.dist,
+      filename: 'bundle.js',
+      publicPath: '/src/assets/'
+    },
+    module: {
+      rules: [
+        {
+          test: /\.jsx?$/,
+          loader: 'babel-loader',
+          include: PATHS.src,
+          options: {
+            presets: [
+              'es2015',
+              'react'
+            ]
+          }
+        },
+        {
+          test: /\.less$/,
+          loaders: [
+            'style-loader',
+            {
+              loader: 'css-loader',
+              options: {
+                importLoaders: 1
+              }
+            },
+            'less-loader'
+          ],
+          include: PATHS.styles
+        },
+        {
+          test: /\.(eot|svg|ttf|woff|woff2)$/,
+          loader: 'file-loader',
+          include: PATHS.src
         }
-      },
-      {
-        test: /\.less$/,
-        loaders: [
-          'style-loader',
-          {
-            loader: 'css-loader',
-            options: {
-              importLoaders: 1
-            }
-          },
-          'less-loader'
-        ],
-        include: PATHS.styles
-      },
-      {
-        test: /\.(eot|svg|ttf|woff|woff2)$/,
-        loader: 'file-loader',
-        include: PATHS.src
-      }
+      ]
+    },
+    devtool: 'source-map',
+    plugins: [
+      new webpack.optimize.UglifyJsPlugin({
+        compress: env.production // compress only in production build
+      })
     ]
-  },
-  devtool: 'source-map'
+  }
 };
 
 
