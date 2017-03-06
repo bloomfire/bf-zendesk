@@ -56,7 +56,7 @@ class Search extends React.Component {
                const sessionToken = values[0].sessionToken,
                      domain = values[1].settings.bloomfire_domain,
                      trackParam = track ? '' : '&tk=false';
-               return fetch(`https://${domain}/api/v2/search/facets/recent?query=${encodeURIComponent(query)}&fields=results(instance(id,public,published,contribution_type,title,description,question,explanation,url))&limit=${this.resultsLimit}&session_token=${sessionToken}${trackParam}`, fetchOpts)
+               return fetch(`https://${domain}/api/v2/search/facets/relevant?query=${encodeURIComponent(query)}&fields=results(instance(id,public,published,contribution_type,title,description,question,explanation,url))&limit=${this.resultsLimit}&session_token=${sessionToken}${trackParam}`, fetchOpts)
                         .then(this.props.handleAPILock) // handle 403/422 status codes
                         .then(response => response.json())
                         .then(data => {

@@ -25,7 +25,7 @@ const paragraphify = function (text) {
 
 //
 const getCustomFieldID = function (client) {
-  const devID = 58672028; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
+  const devID = 61262288; // found in the class `custom_field_[ID]` on the <div class="form_field"> that wraps the textarea in the Zendesk ticket UI
   return Promise.all([
     client.get('requirement:bloomfire_linked_resources'), // field automatically created on app installation via app/requirements.json
     getFromClientTicket(client, `customField:custom_field_${devID}`) // field manually created for development
