@@ -1,6 +1,6 @@
 {
   "name": "bloomfire-zendesk-app",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A Zendesk app providing Bloomfire integration.",
   "main": "./src/index.js",
   "private": true,

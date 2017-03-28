@@ -21,8 +21,14 @@ When the page reloads, you should see the app in the right column. The page is s
 
 1. Stop watch mode (that was started via `npm run dev`) if running.
 1. Create a minified production build by running `npm run build`.
+1. Increment semantic version in `package.json` & `manifest.json` and add release notes below.
 1. Package the app by running [`zat package`](https://developer.zendesk.com/apps/docs/apps-v2/getting_started#package) in the `/app` directory. This will create a new ZIP file in `/app/tmp`. Currently, these ZIP builds are checked in to git to keep a rudimentary revision history, but it may be wise to `.gitignore` them at some point if that gets unwieldy.
 1. Upload the package via the Zendesk web app.
+
+## Release Notes
+
+* 1.0.0 - Initial release.
+* 1.0.1 - Update support contact information and change search filter query parameter from `tk` to `trk`.
 
 ## Notes
 
