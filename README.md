@@ -45,3 +45,4 @@ When the page reloads, you should see the app in the right column. The page is s
 * Split `webpack.config.js` into development and production configurations. Currently, the configuration is production-optimized, which significantly reduces bundle size but creates slow incremental builds during development.
 * Add tests.
 * Refactor and simplify/modularize code where necessary.
+* Fix warnings from UglifyJs when running `npm run build`.
