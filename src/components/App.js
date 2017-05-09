@@ -243,7 +243,25 @@ class App extends React.Component {
   }
 
   insertShortURL(link) {
-    console.log(link);
+    fetch('https://api.rebrandly.com/v1/links', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: 'cdd80d3a3f55412f9b7acf744ad6b793'
+      },
+      mode: 'cors',
+      body: JSON.stringify({
+        destination: link.href,
+        domain: {
+          fullName: 'blmfr.io'
+        }
+      })
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log(`http${data.https ? 's' : ''}://${data.shortUrl}`);
+        // TODO: insert into ticket field
+      });
   }
 
   applyResize() {
