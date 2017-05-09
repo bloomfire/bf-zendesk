@@ -259,8 +259,10 @@ class App extends React.Component {
     })
       .then(response => response.json())
       .then(data => {
-        console.log(`http${data.https ? 's' : ''}://${data.shortUrl}`);
-        // TODO: insert into ticket field
+        // console.log(data);
+        // console.log(link);
+        const shortURL = `http${data.https ? 's' : ''}://${data.shortUrl}`;
+        this.props.client.invoke('ticket.editor.insert', `<a href="${shortURL}">${shortURL}</a>`);
       });
   }
 

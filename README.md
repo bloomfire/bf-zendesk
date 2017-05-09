@@ -28,7 +28,8 @@ When the page reloads, you should see the app in the right column. The page is s
 ## Release Notes
 
 * 1.0.0 - Initial release.
-* 1.0.1 - Update support contact information and change search filter query parameter from `tk` to `trk`.
+* 1.0.1 - Updated support contact information and changed search filter query parameter from `tk` to `trk`.
+* 1.1.0 - Added a plus icon to linked resource list items that inserts a link in the "Public reply" ticket field at the current cursor.
 
 ## Notes
 
@@ -38,3 +39,9 @@ When the page reloads, you should see the app in the right column. The page is s
 
 * For things to work correctly end-to-end, it's important to follow the development steps in the order listed above.
 * Sometimes - especially after the computer returns from sleep mode - the page under development in the browser may stop responding to code updates. If this happens, first try closing and reopening Chrome. If that doesn't work, you'll need to stop everything and restart from step 1 above.
+
+## TODO
+
+* Split `webpack.config.js` into development and production configurations. Currently, the configuration is production-optimized, which significantly reduces bundle size but creates slow incremental builds during development.
+* Add tests.
+* Refactor and simplify/modularize code where necessary.
