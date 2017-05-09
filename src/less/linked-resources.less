@@ -41,6 +41,10 @@ section.linked-resources {
       .icon-plus {
         fill: #317887;
       }
+
+      .icon-plus {
+        visibility: visible;
+      }
     }
 
     .icon-link,
@@ -51,6 +55,16 @@ section.linked-resources {
     .icon-broken-link {
       display: none;
       fill: #317887;
+    }
+
+    .icon-plus {
+      visibility: hidden;
+      opacity: 0.6;
+
+      &:hover,
+      &:active {
+        opacity: 1;
+      }
     }
   }
 
