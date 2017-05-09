@@ -165,7 +165,8 @@ class Search extends React.Component {
             <div className="content-box">
               <LinkList links={this.props.results}
                         includeBrokenLink={false}
-                        handleClick={this.props.addLinkedResource}/>
+                        handleLinkIconClick={this.props.addLinkedResource}
+                        handlePlusIconClick={this.props.insertShortURL}/>
             </div>
           }
         </div>

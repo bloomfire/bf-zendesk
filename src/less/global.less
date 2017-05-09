@@ -114,22 +114,35 @@ textarea {
     position: relative;
     padding: 0 10px 0 6px;
 
-    .icon-link-container {
+    .icon-link-container,
+    .icon-plus-container {
       display: inline-block;
       margin-right: 4px;
+    }
+
+    .icon-link,
+    .icon-broken-link,
+    .icon-plus {
+      cursor: pointer;
     }
 
     .icon-link,
     .icon-broken-link {
       width: 12px;
       height: 12px;
-      cursor: pointer;
+    }
+
+    .icon-plus {
+      width: 11px;
+      height: 11px;
+      position: relative;
+      top: -1px;
     }
   }
 
   a {
     .truncate;
-    .calc(max-width, ~'100% - 56px');
+    .calc(max-width, ~'100% - 71px');
     display: inline-block;
     vertical-align: middle;
     white-space: nowrap;
@@ -147,7 +160,8 @@ textarea {
 }
 
 .icon-link,
-.icon-broken-link {
+.icon-broken-link,
+.icon-plus {
   vertical-align: middle;
 }
 

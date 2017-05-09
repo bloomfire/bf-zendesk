@@ -16,17 +16,19 @@ class LinkList extends React.Component {
     return (
       <ul className="link-list">
         {links.map(link => {
-          const handleClick = this.props.handleClick.bind(this, {
-            id: link.id,
-            type: link.contribution_type
-          });
+          const handleLinkIconClick = this.props.handleLinkIconClick.bind(this, {
+                  id: link.id,
+                  type: link.contribution_type
+                }),
+                handlePlusIconClick = this.props.handlePlusIconClick.bind(this, link);
           return (
             <Link key={link.id}
                   href={link.href}
                   title={link.title}
                   public={link.public}
                   includeBrokenLink={this.props.includeBrokenLink}
-                  handleClick={handleClick}/>
+                  handleLinkIconClick={handleLinkIconClick}
+                  handlePlusIconClick={handlePlusIconClick}/>
           );
         })}
       </ul>

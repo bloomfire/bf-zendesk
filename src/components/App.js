@@ -45,6 +45,7 @@ class App extends React.Component {
     this.createLinkedResource = this.createLinkedResource.bind(this);
     this.addLinkedResource = this.addLinkedResource.bind(this);
     this.removeLinkedResource = this.removeLinkedResource.bind(this);
+    this.insertShortURL = this.insertShortURL.bind(this);
     this.setSearchResults = this.setSearchResults.bind(this);
     this.handleAPILock = this.handleAPILock.bind(this);
     // this.updateZendeskTicketCustomField(''); // DEV ONLY: uncomment this line and refresh the Zendesk ticket page to blow away the ticket's linked resources
@@ -177,7 +178,6 @@ class App extends React.Component {
     return _.find(this.state.searchResults, result => result.id === id);
   }
 
-  //
   setSearchResultDisplay(id, display) {
     const searchResults = this.state.searchResults.map((searchResult) => {
             if (searchResult.id === id) {
@@ -188,7 +188,6 @@ class App extends React.Component {
     this.setState({ searchResults });
   }
 
-  //
   createLinkedResource(resourceObj) {
     Promise.all([
       this.getResourcesArr(),
@@ -214,9 +213,8 @@ class App extends React.Component {
         this.updateZendeskTicketCustomField(encodeLinkedResources(resourcesArr));
         this.setState({ linkedResources });
       })
-  };
+  }
 
-  //
   addLinkedResource(resourceObj) {
     this.createLinkedResource(this.findSearchResult(resourceObj.id));
     this.setSearchResultDisplay(resourceObj.id, false);
@@ -239,11 +237,14 @@ class App extends React.Component {
     this.setSearchResultDisplay(resourceObj.id, true);
   }
 
-  //
   removeLinkedResource(resourceObj) {
-    this.removeLinkedResourceFromTicket(resourceObj)
+    this.removeLinkedResourceFromTicket(resourceObj);
     this.removeLinkedResourceFromState(resourceObj);
-  };
+  }
+
+  insertShortURL(link) {
+    console.log(link);
+  }
 
   applyResize() {
     const currentHeight = this.getHeight();
@@ -282,12 +283,14 @@ class App extends React.Component {
                     results={this.state.searchResults}
                     setResults={this.setSearchResults}
                     addLinkedResource={this.addLinkedResource}
+                    insertShortURL={this.insertShortURL}
                     handleAPILock={this.handleAPILock}/>
             <LinkedResources client={this.props.client}
                              resize={this.resize}
                              links={this.state.linkedResources}
                              hasSearchResults={this.state.searchResults.length > 0}
                              removeLinkedResource={this.removeLinkedResource}
+                             insertShortURL={this.insertShortURL}
                              handleAPILock={this.handleAPILock}/>
             <AddContent client={this.props.client}
                         resize={this.resize}
