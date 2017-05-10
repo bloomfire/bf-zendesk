@@ -166,7 +166,7 @@ class Search extends React.Component {
               <LinkList links={this.props.results}
                         includeBrokenLink={false}
                         handleLinkIconClick={this.props.addLinkedResource}
-                        handlePlusIconClick={this.props.insertShortURL}/>
+                        handleExternalLinkIconClick={this.props.insertShortURL}/>
             </div>
           }
         </div>

@@ -251,7 +251,7 @@ class App extends React.Component {
       },
       mode: 'cors',
       body: JSON.stringify({
-        destination: link.href,
+        destination: link.url,
         domain: {
           fullName: 'blmfr.io'
         }
@@ -259,10 +259,8 @@ class App extends React.Component {
     })
       .then(response => response.json())
       .then(data => {
-        // console.log(data);
-        // console.log(link);
         const shortURL = `http${data.https ? 's' : ''}://${data.shortUrl}`;
-        this.props.client.invoke('ticket.editor.insert', `<a href="${shortURL}">${shortURL}</a>`);
+        this.props.client.invoke('ticket.editor.insert', `<a href="${shortURL}">${link.title}</a>`);
       });
   }
 

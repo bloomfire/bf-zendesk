@@ -20,7 +20,7 @@ class LinkList extends React.Component {
                   id: link.id,
                   type: link.contribution_type
                 }),
-                handlePlusIconClick = this.props.handlePlusIconClick.bind(this, link);
+                handleExternalLinkIconClick = this.props.handleExternalLinkIconClick.bind(this, link);
           return (
             <Link key={link.id}
                   href={link.href}
@@ -28,7 +28,7 @@ class LinkList extends React.Component {
                   public={link.public}
                   includeBrokenLink={this.props.includeBrokenLink}
                   handleLinkIconClick={handleLinkIconClick}
-                  handlePlusIconClick={handlePlusIconClick}/>
+                  handleExternalLinkIconClick={handleExternalLinkIconClick}/>
           );
         })}
       </ul>

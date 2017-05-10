@@ -45,7 +45,7 @@ class LinkedResources extends React.Component {
       boxContents = <LinkList links={this.props.links}
                               includeBrokenLink={true}
                               handleLinkIconClick={this.props.removeLinkedResource}
-                              handlePlusIconClick={this.props.insertShortURL}/>;
+                              handleExternalLinkIconClick={this.props.insertShortURL}/>;
     } else {
       const clickToAdd = <p className="instructions">Click <LinkIcon/> to add</p>,
             useSearch = <p className="instructions">Use search to find resources</p>;
