@@ -2,6 +2,8 @@
   "app": {
     "name": "Bloomfire",
     "description": "Search for and create content in Bloomfire from the comfort of your Zendesk portal.",
+    "installation_instructions": "",
+    "long_description": "Search for and create content in Bloomfire from the comfort of your Zendesk portal.",
     "parameters": {
       "bloomfire_domain": {
         "label": "Bloomfire Domain (e.g., example.bloomfire.com)"

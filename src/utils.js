@@ -122,7 +122,7 @@ const getBloomfireUserIDByEmail = function (client, email, handleAPILock) {
            .then(function (values) {
              const sessionToken = values[0].sessionToken,
                    domain = values[1].settings.bloomfire_domain;
-             return fetch(`https://${domain}/api/v2/users?fields=email,id&session_token=${sessionToken}`, fetchOpts)
+             return fetch(`https://${domain}/api/v2/users?fields=email,id&session_token=${sessionToken}&limit=3&email_equals=${ email}`, fetchOpts)
                       .then(handleAPILock) // handle 403/422 status codes
                       .then(response => response.json())
                       .then(users => {
@@ -130,7 +130,7 @@ const getBloomfireUserIDByEmail = function (client, email, handleAPILock) {
                           return user.email === email;
                         }), 'id');
                       })
-                        .catch(_.noop); // suppress error (no need to continue)
+                      .catch(_.noop); // suppress error (no need to continue)
            });
 };
 
