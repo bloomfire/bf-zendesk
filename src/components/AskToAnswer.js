@@ -50,7 +50,7 @@ class AskToAnswer extends React.Component {
       this.props.client.metadata(),
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIDByEmail.bind(this, this.props.client, this.props.handleAPILock)) // look up current user's email via Bloomfire API
+        .then(data => getBloomfireUserIDByEmail(this.props.client, data, this.props.handleAPILock)) // look up current user's email via Bloomfire API
     ])
       .then(values => {
         const sessionToken = values[0].sessionToken,

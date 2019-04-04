@@ -1,4 +1,6 @@
 {
   "subdomain": "mashbox",
-  "username": "troy@mashbox.com"
+  "username": "troy@mashbox.com",
+  "zat_latest": "2.13.0",
+  "zat_update_check": "2019-04-03"
 }

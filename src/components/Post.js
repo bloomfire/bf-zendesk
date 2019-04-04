@@ -113,7 +113,7 @@ class Post extends React.Component {
       this.setState({ processing: true });
       this.props.client.get('currentUser.email') // get current user's email via Zendesk client SDK
         .then(data => data['currentUser.email']) // extract the returned property
-        .then(getBloomfireUserIDByEmail.bind(this, this.props.client, this.props.handleAPILock)) // look up current user's email via Bloomfire API
+        .then(data => getBloomfireUserIDByEmail(this.props.client, data, this.props.handleAPILock)) // look up current 
         .then(this.submitForm.bind(this)) // submit form data
         .then(response => response.json()) // extract JSON from response
         .then(data => {

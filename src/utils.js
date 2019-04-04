@@ -49,17 +49,12 @@ const getResourcesTxtFromCustomField = function (client) {
   return getCustomFieldID(client)
            .then(function (id) {
              customFieldID = id; // cache value
-             // if (getFromServer) {
              return getFromClientTicket(client, 'id')
                       .then(data => client.request(`/api/v2/tickets/${data.id}.json`))
                       .then(function (data) {
                         const customFieldObj = _.find(data.ticket.custom_fields, field => field.id === customFieldID);
                         return customFieldObj.value || '';
                       });
-            // } else { // get from ticket field client-side
-            //   return getFromClientTicket(client, `customField:custom_field_${customFieldID}`)
-            //            .then(data => data[`customField:custom_field_${customFieldID}`]);
-            // }
            });
 };
 
