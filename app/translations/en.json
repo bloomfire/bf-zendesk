@@ -2,8 +2,8 @@
   "app": {
     "name": "Bloomfire",
     "description": "Search for and create content in Bloomfire from the comfort of your Zendesk portal.",
-    "installation_instructions": "",
-    "long_description": "Search for and create content in Bloomfire from the comfort of your Zendesk portal.",
+    "installation_instructions": "During installation, enter the domain name of the **Bloomfire community** you’d like to connect (e.g., “yoursite.bloomfire.com”) along with the **API key**. This can be found in your Bloomfire community under the **gear menu \u003e Settings \u003e Integrations \u003e Bloomfire API Key**. \r\n\r\nYou must be a Bloomfire admin or account owner in order to access the API key. Please also note that your account must also have a subscription to the Zendesk integration functionality in order for the app to access your community.",
+    "long_description": "The Bloomfire app for Zendesk intelligently analyzes your ticket content and recommends helpful content from your Bloomfire community. Harness the power of your knowledge base and ensure that your agents are well equipped to answer customer questions quickly and consistently. \r\n\r\nAgents can click to view recommended content, search for specific content, and link Bloomfire content to each ticket for future reference and easy reporting - all from within the Zendesk portal. If they don’t find the content they’re looking for, agents can easily contribute content directly to the Bloomfire community. All of this happens directly within you Zendesk portal, making it super easy for your agents to find and share the information they need to do their jobs. \r\n\r\nNote: the Bloomfire app is free to download, but requires a Bloomfire community and a subscription to the Zendesk integration functionality to use. Contact [sales@bloomfire.com](sales@bloomfire.com) for more information.",
     "parameters": {
       "bloomfire_domain": {
         "label": "Bloomfire Domain (e.g., example.bloomfire.com)"
