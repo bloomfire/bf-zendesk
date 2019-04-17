@@ -56,7 +56,7 @@ class AskToAnswer extends React.Component {
         const sessionToken = values[0].sessionToken,
               domain = values[1].settings.bloomfire_domain,
               currentUserID = values[2];
-        fetch(`https://${domain}/api/v2/users?fields=active,id,first_name,last_name&session_token=${sessionToken}`, fetchOpts)
+        fetch(`https://${domain}/api/v2/users?fields=active,id,first_name,last_name&limit=5&session_token=${sessionToken}`, fetchOpts)
           .then(this.props.handleAPILock) // handle 403/422 status codes
           .then(response => response.json())
           .then(users => {
