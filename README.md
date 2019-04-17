@@ -31,6 +31,7 @@ When the page reloads, you should see the app in the right column. The page is s
 * 1.0.1 - Updated support contact information and changed search filter query parameter from `tk` to `trk`.
 * 1.1.0 - Added a plus icon to linked resource list items that inserts a link in the "Public reply" ticket field at the current cursor.
 * 1.2.0 - Changed user request to filter by provided email
+* 1.2.1 - Limit return of suggested users to 5
 
 ## Notes
 
